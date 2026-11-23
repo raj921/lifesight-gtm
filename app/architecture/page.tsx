@@ -28,11 +28,12 @@ const NOTES: [string, string[]][] = [
 export default function Architecture() {
   return (
     <div className="space-y-8">
-      <header className="rise">
-        <h1 className="font-serif text-4xl md:text-5xl">Rules decide. AI writes. People approve.</h1>
+      <header className="glow">
+        <p className="label">How it works</p>
+        <h1 className="mt-2 font-serif text-4xl md:text-5xl">Rules decide. AI writes. <em className="text-fg3">People approve.</em></h1>
       </header>
 
-      <section className="rounded-xl border border-line bg-card p-4 md:p-6">
+      <section className="gridlines rounded-xl border border-line bg-card p-4 md:p-6">
         <div className="overflow-x-auto"><div className="min-w-[860px]"><ArchitectureDiagram /></div></div>
       </section>
 

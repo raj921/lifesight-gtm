@@ -1,9 +1,9 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion, MotionConfig } from "motion/react";
 import NumberFlow from "@number-flow/react";
 import { Tooltip } from "@base-ui/react/tooltip";
-import { ArrowCounterClockwise, ArrowRight, Check, Diamond, EnvelopeSimple, Plus, X } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, ArrowRight, Check, Diamond, EnvelopeSimple, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ACCOUNTS, INBOUND_EVENTS, type InboundType } from "@/lib/data";
 import { addInbound, qualifyLead, rank, recommendExperience, salesforcePlan, SIGNALS, slaText, type LeadVerdict, type Scored, type SfOp, type Tier } from "@/lib/engine";
@@ -33,6 +33,9 @@ export function Desk() {
   const [selected, setSelected] = useState("brightleaf");
   const [flash, setFlash] = useState<{ id: string; n: number } | null>(null);
   const [active, setActive] = useState<string | null>(null);
+  const [bar, setBar] = useState({ email: "", title: "", type: "report_download" as InboundType });
+  const [toast, setToast] = useState<{ text: string; n: number } | null>(null);
+  const toastSeq = useRef(0);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft | "loading" | { error: string }>>({});
   const [decisions, setDecisions] = useState<Record<string, "approved" | "skipped">>({});
@@ -55,8 +58,12 @@ export function Desk() {
     setSelected(id);
     setFlash((p) => ({ id, n: (p?.n ?? 0) + 1 }));
     setDrafts({});
+    const from = snap(ranked, id);
+    const n = ++toastSeq.current; // unique per toast so an old timer never hides a newer toast
+    setToast({ text: `${v.account.name} moved #${from.rank} → #${to.rank}`, n });
+    setTimeout(() => setToast((t) => (t?.n === n ? null : t)), 3500);
     setVerdict({
-      ...v, change: { from: snap(ranked, id), to }, experience: recommendExperience(v, f.type, to.tier),
+      ...v, change: { from, to }, experience: recommendExperience(v, f.type, to.tier),
       sf: salesforcePlan(v, f.email, f.type, nextRanked.find((x) => x.account.id === id), ranked.find((x) => x.account.id === id)),
     });
     revealDetails();
@@ -88,39 +95,49 @@ export function Desk() {
     <MotionConfig reducedMotion="user">
       <Tooltip.Provider delay={150}>
         <div className="space-y-5">
-          <header className="flex flex-wrap items-end justify-between gap-3">
+          <header className="glow flex flex-wrap items-end justify-between gap-3 pt-1">
             <div>
-              <p className="text-sm text-fg3">40 target accounts · ranked live</p>
-              <h1 className="font-serif text-4xl md:text-[44px] leading-tight">Who to call <em>today</em></h1>
+              <span className="inline-flex h-6 items-center gap-2 rounded-full bg-component px-2.5 text-xs text-fg2"><span className="live-dot" />Live · 40 accounts</span>
+              <h1 className="mt-3 font-serif text-4xl leading-tight md:text-5xl">Who to call <em className="text-fg3">today.</em></h1>
             </div>
             <div className="flex gap-1.5">
               {counts.map((n, i) => <TierBadge key={i} tier={(i + 1) as Tier} count={n} />)}
             </div>
           </header>
 
-          <section aria-label="Try a website visit" className="rounded-xl border border-line bg-card p-3">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="px-1.5 text-sm text-fg2">Try a website visit</span>
+          <section aria-label="Try a website visit">
+            <p className="label">01 — Try a website visit</p>
+            <form onSubmit={(e) => { e.preventDefault(); run({ label: "Custom", ...bar }); }}
+              className="glass mt-2 flex flex-wrap items-center gap-1 rounded-2xl border border-line p-1.5 shadow-sm focus-within:border-line-strong">
+              <input required type="email" value={bar.email} onChange={(e) => setBar({ ...bar, email: e.target.value })} aria-label="Work email"
+                placeholder="Type a work email to simulate a visit…" className="h-9 min-w-0 flex-[2_1_14rem] bg-transparent px-3 text-sm outline-none placeholder:text-fg3" />
+              <input value={bar.title} onChange={(e) => setBar({ ...bar, title: e.target.value })} aria-label="Job title"
+                placeholder="Job title" className="h-9 min-w-0 flex-[1_1_8rem] rounded-lg bg-component px-3 text-sm outline-none placeholder:text-fg3" />
+              <select value={bar.type} onChange={(e) => setBar({ ...bar, type: e.target.value as InboundType })} aria-label="What they did"
+                className="h-9 flex-[1_1_9rem] rounded-lg bg-component px-2 text-sm outline-none">
+                {Object.keys(INBOUND_EVENTS).map((k) => <option key={k} value={k}>{SIGNALS[k as InboundType].label}</option>)}
+              </select>
+              <Button type="submit" variant="default" className="h-9 rounded-xl">Run<ArrowRight size={14} /></Button>
+            </form>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
               {PRESETS.map((p) => (
-                <Button key={p.label} onClick={() => run(p)} aria-pressed={active === p.label}
-                  className="aria-pressed:bg-hot-subtle aria-pressed:text-hot-fg">{p.label}</Button>
+                <button key={p.label} onClick={() => { setBar({ email: p.email, title: p.title, type: p.type }); run(p); }} aria-pressed={active === p.label}
+                  className="text-sm text-fg2 hover:text-fg aria-pressed:text-hot-fg"><span aria-hidden className="mr-1.5 text-fg3">↳</span>{p.label}</button>
               ))}
-              <details className="open:basis-full">
-                <summary className="inline-flex h-8 cursor-pointer list-none items-center gap-1 rounded-lg px-3 text-sm text-fg2 hover:bg-component-hover hover:text-fg"><Plus size={14} />Custom</summary>
-                <CustomVisit onRun={run} />
-              </details>
               {Object.keys(events).length > 0 && (
-                <Button variant="ghost" className="ml-auto" onClick={() => { setEvents({}); setVerdict(null); setDrafts({}); setActive(null); }}>
-                  <ArrowCounterClockwise size={14} />Reset
-                </Button>
+                <button onClick={() => { setEvents({}); setVerdict(null); setDrafts({}); setActive(null); }} className="ml-auto inline-flex items-center gap-1 text-sm text-fg3 hover:text-fg">
+                  <ArrowCounterClockwise size={13} />Reset
+                </button>
               )}
             </div>
             {verdict && <VisitResult key={`${active}|${verdict.reason}|${verdict.change?.to.rank ?? ""}`} v={verdict} />}
           </section>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.4fr)]">
-            <section aria-label="Accounts" className="overflow-hidden rounded-xl border border-line bg-card lg:sticky lg:top-4 lg:self-start">
-              <ol className="max-h-[calc(100vh-7rem)] overflow-y-auto p-1">
+            <section aria-label="Accounts" className="lg:sticky lg:top-4 lg:self-start">
+              <p className="label mb-2">02 — Ranked accounts</p>
+              <div className="overflow-hidden rounded-xl border border-line bg-card">
+              <ol className="max-h-[calc(100vh-8.5rem)] overflow-y-auto p-1">
                 {ranked.map((s, i) => (
                   <motion.li key={s.account.id} layout transition={spring} className="relative">
                     {flash?.id === s.account.id && (
@@ -139,9 +156,11 @@ export function Desk() {
                   </motion.li>
                 ))}
               </ol>
+              </div>
             </section>
 
             <div id="details" className="scroll-mt-4">
+              <p className="label mb-2">03 — Account</p>
               {/* enter-only animation: content never waits on an exit animation */}
               <motion.div key={cur.account.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
                 <Account s={cur} drafts={drafts} onDraft={draft} decisions={decisions} decide={(k, v) => setDecisions((x) => ({ ...x, [k]: v }))} />
@@ -149,6 +168,12 @@ export function Desk() {
             </div>
           </div>
         </div>
+        {toast && (
+          <motion.div key={toast.n} role="status" initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 32 }}
+            className="glass fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-line px-4 py-2 text-sm shadow-lg">
+            <Diamond size={13} weight="fill" className="text-hot" />{toast.text}
+          </motion.div>
+        )}
       </Tooltip.Provider>
     </MotionConfig>
   );
@@ -206,21 +231,6 @@ function Ring({ value, color, size = 64, label }: { value: number; color: string
   );
 }
 
-function CustomVisit({ onRun }: { onRun: (f: (typeof PRESETS)[number]) => void }) {
-  const [f, setF] = useState({ label: "Custom", email: "", title: "", type: "report_download" as InboundType });
-  const field = "h-8 rounded-lg border border-line bg-sunken px-2.5 text-sm placeholder:text-fg3";
-  return (
-    <form onSubmit={(e) => { e.preventDefault(); onRun(f); }} className="mt-2 grid w-full max-w-lg gap-2 sm:grid-cols-2">
-      <input required type="email" placeholder="Work email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} className={field} aria-label="Work email" />
-      <input placeholder="Job title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={field} aria-label="Job title" />
-      <select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as InboundType })} className={field} aria-label="What they did">
-        {Object.keys(INBOUND_EVENTS).map((k) => <option key={k} value={k}>{SIGNALS[k as InboundType].label}</option>)}
-      </select>
-      <Button type="submit" variant="default">Run visit<ArrowRight size={14} /></Button>
-    </form>
-  );
-}
-
 const VERB = { route: ["Send to sales", "bg-hot-subtle text-hot-fg"], enrich: ["Look up first", "bg-warm-subtle text-warm-fg"], nurture: ["Nurture", "bg-brand-subtle text-brand-fg"], exclude: ["Ignore", "bg-component text-fg2"] } as const;
 const tierName = (t: string | number) => String(t).replace(/[123]/g, (d) => TIER[+d as Tier].name);
 
@@ -237,8 +247,8 @@ function VisitResult({ v }: { v: Verdict }) {
   const [verb, tone] = VERB[v.verdict];
   return (
     <motion.div data-visit-result initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-      <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,0.9fr)_1fr_1fr]">
-        <div className="flex flex-col justify-center gap-1.5 rounded-lg p-2">
+      <div className="mt-3 grid gap-1.5 rounded-2xl border border-line bg-card p-1.5 md:grid-cols-[minmax(0,0.9fr)_1fr_1fr]">
+        <div className="flex flex-col justify-center gap-1.5 rounded-[10px] p-3">
           <span className={`w-fit rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>{verb}</span>
           <p className="text-sm font-medium">{v.reason}</p>
           {v.change && (
@@ -249,12 +259,12 @@ function VisitResult({ v }: { v: Verdict }) {
             </p>
           )}
         </div>
-        <div className="rounded-lg bg-sunken p-3">
+        <div className="rounded-[10px] bg-sunken p-3">
           <p className="text-xs text-fg3">They see next</p>
           <ul className="mt-1 space-y-0.5 text-sm">{v.experience.assets.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
           <p className="mt-1 text-sm text-hot-fg">{v.experience.cta}</p>
         </div>
-        <div className="rounded-lg bg-sunken p-3">
+        <div className="rounded-[10px] bg-sunken p-3">
           <p className="text-xs text-fg3">Salesforce · demo, not written</p>
           <ul className="mt-1 space-y-0.5 text-sm">
             {v.sf.length ? v.sf.map((o, i) => <li key={i}>{sfLine(o)}</li>) : <li className="text-fg3">Nothing new to write</li>}
@@ -274,7 +284,7 @@ function Account({ s, drafts, onDraft, decisions, decide }: {
   const older = a.signals.filter((x) => !live.has(x.id)).length;
   return (
     <section aria-label={`${a.name} details`} className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-card p-5">
+      <div className="gridlines flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-card p-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h2 className="font-serif text-3xl">{a.name}</h2>

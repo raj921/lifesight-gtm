@@ -58,7 +58,7 @@ node scripts/check-api.mjs     # live DeepSeek draft passes the citation guard (
 
 ## UI stack
 
-The design follows the Interfere design system (design.interfere.com): its colour tokens for light and dark, Inter for UI text, a serif for headings, and gem-style tier badges.
+Design rules live in [DESIGN.md](DESIGN.md). The design follows the Interfere design system (design.interfere.com): its colour tokens for light and dark, Inter for UI text, a serif for headings, and gem-style tier badges.
 
 - [Motion](https://motion.dev): accounts slide to their new rank when a visit re-scores them
 - [NumberFlow](https://number-flow.barvian.me): ranks and scores roll to new values

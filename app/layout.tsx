@@ -20,7 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col pt-1 lg:pt-0">
             <TopBar />
-            <main className="flex-1 rounded-2xl border border-line bg-container p-4 md:p-7">{children}</main>
+            <main className="flex-1 overflow-clip rounded-2xl border border-line bg-container p-4 md:p-7">{children}</main>
           </div>
         </div>
       </body>

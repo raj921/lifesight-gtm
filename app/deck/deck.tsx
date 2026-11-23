@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArchitectureDiagram } from "@/components/architecture-diagram";
 
 const Kicker = ({ n, t }: { n: number; t: string }) => (
-  <p className="font-mono text-xs uppercase tracking-[.2em] text-fg2">{n} / 5 · {t}</p>
+  <p className="label">{String(n).padStart(2, "0")} — {t}</p>
 );
 const Big = ({ children }: { children: React.ReactNode }) => <h2 className="font-serif text-4xl md:text-5xl mt-3 leading-[1.05]">{children}</h2>;
 const Card = ({ h, children, tone }: { h: string; children: React.ReactNode; tone?: string }) => (
@@ -11,10 +11,10 @@ const Card = ({ h, children, tone }: { h: string; children: React.ReactNode; ton
 );
 
 const SLIDES = [
-  <div key="1" className="grid h-full content-center gap-10 md:grid-cols-[1.2fr_1fr]">
+  <div key="1" className="glow grid h-full content-center gap-10 md:grid-cols-[1.2fr_1fr]">
     <div>
       <Kicker n={1} t="The problem" />
-      <Big>Out of 10,000 accounts, only a few hundred are buying right now.</Big>
+      <Big>Out of 10,000 accounts, <em className="text-fg3">only a few hundred are buying right now.</em></Big>
       <p className="mt-5 text-xl text-fg2">Find them first. Reach the right person with a real reason. Leave the rest to cheap nurture.</p>
     </div>
     <div className="grid content-center gap-3">
@@ -26,7 +26,7 @@ const SLIDES = [
 
   <div key="2" className="flex h-full flex-col">
     <Kicker n={2} t="Outbound · demo" />
-    <Big>Five questions, answered for every account.</Big>
+    <Big>Five questions, <em className="text-fg3">answered for every account.</em></Big>
     <div className="mt-6 grid gap-3 md:grid-cols-5">
       <Card h="Which?">Ad spend, channels, team size</Card>
       <Card h="Why now?">New CMO, MMM job post, pricing visit, report read</Card>
@@ -41,7 +41,7 @@ const SLIDES = [
 
   <div key="3" className="flex h-full flex-col">
     <Kicker n={3} t="Inbound" />
-    <Big>Get found. Spot the buyer. Route in minutes.</Big>
+    <Big>Get found. Spot the buyer. <em className="text-fg3">Route in minutes.</em></Big>
     <div className="mt-6 grid gap-3 md:grid-cols-5">
       <Card h="Found">Original research, comparison pages, answers that ChatGPT and Perplexity quote</Card>
       <Card h="Spotted">Site visits, forms, webinars, the readiness check</Card>
