@@ -7,14 +7,14 @@ const COLS: { title: string; kind: "data" | "rule" | "ai" | "act"; boxes: Box[] 
     ["CRM + call history", "Salesforce, Gong"],
   ] },
   { title: "2 · Ingest + resolve", kind: "data", boxes: [
-    ["Webhooks + nightly batch", "real-time 1P, daily 3P"], ["Queue", "retries, idempotency keys, DLQ"],
-    ["Identity resolution", "domain→Account, person→Contact"], ["Signal store (Postgres)", "typed, timestamped, sourced"],
+    ["Webhooks + nightly batch", "live for our site, daily for the rest"], ["Queue", "retries, no duplicates"],
+    ["Identity resolution", "domain→Account, person→Contact"], ["Signal store (Postgres)", "every signal with its source"],
   ] },
-  { title: "3 · Decide · rules", kind: "rule", boxes: [
-    ["Fit score", "spend, channels, team, size"], ["Intent score", "weight × half-life decay"],
+  { title: "3 · Decide (rules)", kind: "rule", boxes: [
+    ["Fit score", "spend, channels, team, size"], ["Intent score", "fades as signals get older"],
     ["Tier, SLA, owner", "who acts, how fast"], ["Inbound qualification", "competitor, student, TAM"],
   ] },
-  { title: "4 · Explain · AI agents", kind: "ai", boxes: [
+  { title: "4 · Write (AI)", kind: "ai", boxes: [
     ["Research agent", "sources → cited facts"], ["Committee agent", "titles → roles, gaps"],
     ["Writer agent", "persona angle, cited draft"], ["Fact-check guard", "citations, numbers, length"],
   ] },
@@ -23,7 +23,7 @@ const COLS: { title: string; kind: "data" | "rule" | "ai" | "act"; boxes: Box[] 
     ["Sequencer", "only after human approval"], ["Web + ad personalization", "Tier-1 visitors, committee"],
   ] },
 ];
-const SAFE = ["Human approves every send", "Only cited claims ship", "PII minimization + suppression", "Per-run cost caps + model fallback", "Traces + alerts on every agent", "Replay from DLQ"];
+const SAFE = ["Human approves every send", "Only cited claims ship", "Least personal data + do-not-contact list", "Cost caps + backup model", "Every AI run logged", "Failed jobs can be replayed"];
 
 const W = 1200, colW = 200, gap = (W - 40 - colW * 5) / 4, bh = 50, top = 66;
 const stroke = { data: "var(--muted-foreground)", rule: "var(--fit)", ai: "var(--heat)", act: "var(--foreground)" };
@@ -54,11 +54,11 @@ export function ArchitectureDiagram() {
       <path d={`M ${x(4) + colW / 2} ${top + 4 * 60 - 8} V 372 H ${x(2) + colW / 2} V ${top + 4 * 60 - 8}`} fill="none" stroke="var(--warm)" strokeWidth="1.6" strokeDasharray="5 4" markerEnd="url(#ah)" />
       <rect x={x(2) + 30} y={352} width={x(4) - x(2) + colW - 60} height={40} rx="5" fill="var(--background)" stroke="var(--warm)" />
       <text x={x(2) + 46} y={377} fontSize="12" fill="var(--foreground)">
-        <tspan fontWeight="600">Learning loop · </tspan>meetings, opps, won/lost and draft rejections (by claim id) → monthly weight refit + eval set
+        <tspan fontWeight="600">Learning loop · </tspan>meetings, deals won and lost, rejected emails → retune scores every month
       </text>
       {/* inbound re-score path */}
       <path d={`M ${x(0) + colW / 2} ${top} V 41 H ${x(2) + colW / 2} V ${top}`} fill="none" stroke="var(--heat)" strokeWidth="1.2" strokeDasharray="2 3" markerEnd="url(#ah)" opacity=".8" />
-      <text x={x(1) + 6} y={55} fontSize="10.5" fill="var(--heat)">inbound event → re-score in seconds</text>
+      <text x={x(1) + 6} y={55} fontSize="10.5" fill="var(--heat)">site visit → rescored in seconds</text>
       {/* safeguards */}
       <text x="20" y="438" fontSize="15" fill="var(--foreground)" fontFamily="var(--font-fraunces)">Safeguards on every path</text>
       {SAFE.map((s, i) => (
@@ -69,7 +69,7 @@ export function ArchitectureDiagram() {
       ))}
       <g fontSize="11" fill="var(--muted-foreground)">
         <rect x={W - 330} y={424} width="10" height="10" rx="2" fill="none" stroke="var(--fit)" strokeWidth="1.6" /><text x={W - 314} y={433}>rules decide</text>
-        <rect x={W - 230} y={424} width="10" height="10" rx="2" fill="none" stroke="var(--heat)" strokeWidth="1.6" /><text x={W - 214} y={433}>AI explains</text>
+        <rect x={W - 230} y={424} width="10" height="10" rx="2" fill="none" stroke="var(--heat)" strokeWidth="1.6" /><text x={W - 214} y={433}>AI writes</text>
         <rect x={W - 140} y={424} width="10" height="10" rx="2" fill="none" stroke="var(--warm)" strokeWidth="1.6" /><text x={W - 124} y={433}>learning</text>
       </g>
     </svg>

@@ -34,12 +34,11 @@ node scripts/check-api.mjs     # live DeepSeek draft passes the citation guard (
 
 ## Demo script (2 minutes)
 
-1. The ranked list shows **priority = fit × intent**. Click Brightleaf Home: it has fresh pricing visits, so it gets a 4-hour SLA.
-2. Click Tidewater Mobile. Its intent is high but its fit is poor, so it stays in Tier 3. Fit gates intent.
-3. In the inbound panel, keep the preset "Dormant TAM account reads report" and press **Fire event**. The email is matched to Halcyon Beauty. The account moves from #16 to #4 and from Tier 3 to Tier 1, and the next action changes from "Nurture and watch" to "Hot inbound: email within 24 hours".
-4. Under buying committee, press **Draft email** for Priya Raman. DeepSeek writes a draft that cites only stored signals and approved product facts. Hover over a citation to see its evidence. The fact-check result is shown above the draft. Approve or reject it; nothing is sent.
-5. Under the inbound panel, two cards show what the visitor sees next (content, assessment or a meeting offer, chosen by role, channels and tier) and the exact Salesforce writes: Account fields, Contact or Lead, and an owner Task with the SLA.
-6. Try the other presets. A competitor domain is excluded, a student goes to nurture, and a Gmail address goes to enrichment.
+1. The list is ranked by score (fit × timing). Hot, Warm and Later replace Tier 1, 2 and 3.
+2. Click **Tidewater Mobile**. It's busy on our site but too small to buy, so it stays Later.
+3. Click **Halcyon reads our report**. Halcyon jumps from #16 to #4 and from Later to Hot. You also see what the visitor gets next and what would be written to Salesforce.
+4. Under **People**, click **Write email** for Priya. Hover a citation to see its source. Approve or skip; nothing is sent.
+5. Try the other chips: a competitor is ignored, a student goes to nurture, a Gmail sign-up gets looked up first. **Custom…** lets you type any email.
 
 ## What is real and what is simulated
 

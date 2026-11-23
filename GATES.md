@@ -12,12 +12,12 @@ Scope: A working signal-led GTM prototype (scoring, why-now, committee, cited AI
 - [x] G2: Production build compiles with no type errors
   CHECK: pnpm build && echo build-ok
   EXPECT: build-ok
-  EVIDENCE: exit=0; shell=/bin/sh; cwd=/Users/rajkumar/lifesight-gtm; path=5afcfbcbba9e/46 entries; EXPECT=matched; output-sha256=2365ee95d152d62f712d414ad37c00cfc927a88926f6c902c7417f3c1b76b16a; output-bytes=1139
+  EVIDENCE: exit=0; shell=/bin/sh; cwd=/Users/rajkumar/lifesight-gtm; path=5afcfbcbba9e/46 entries; EXPECT=matched; output-sha256=1570be7bed2318642d8e2a5b2595ced6c2fb9c57cdeffab43f760ac415dff558; output-bytes=1139
 
 - [x] G3: Live draft API returns a DeepSeek draft whose every citation maps to a real signal (dev server on :3000)
   CHECK: node scripts/check-api.mjs
   EXPECT: api check passed
-  EVIDENCE: exit=0; shell=/bin/sh; cwd=/Users/rajkumar/lifesight-gtm; path=5afcfbcbba9e/46 entries; EXPECT=matched; output-sha256=0403f9caff46797942854b68d755f5910e870aee2aad782b4d012756e7b967da; output-bytes=563
+  EVIDENCE: exit=0; shell=/bin/sh; cwd=/Users/rajkumar/lifesight-gtm; path=5afcfbcbba9e/46 entries; EXPECT=matched; output-sha256=6b55edcf2c49bf6b117102b89e3b268587b6201b07d40d9b93fca165e2ddac50; output-bytes=462
 
 - [x] G4: The DeepSeek key file is not tracked by git
   CHECK: node scripts/check-secret.mjs

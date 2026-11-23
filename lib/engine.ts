@@ -96,29 +96,14 @@ export type Scored = ReturnType<typeof scoreAccount>;
 export const slaText = (h: number | null) => (h == null ? "no deadline" : h <= 24 ? `within ${h} hours` : `within ${Math.round(h / 24)} days`);
 
 function nextAction(tier: Tier, top: Signal | undefined, slaHours: number | null, target: Contact & { role: Role } | undefined, a: Account) {
-  const who = target ? `${target.name} (${target.role})` : "buying committee";
-  const firstParty = top && SIGNALS[top.type].party !== "3P";
+  const who = target ? target.name.split(" ")[0] : "the buying team";
+  const when = slaText(slaHours);
+  const hot = top && SIGNALS[top.type].party !== "3P";
   if (tier === 1)
-    return {
-      owner: `AE · ${a.owner}`,
-      play: firstParty ? "Hot inbound: personal email + call" : "Signal-led executive outreach",
-      steps: [
-        `Email ${who} ${slaText(slaHours)}, anchored on: ${top ? SIGNALS[top.type].label.toLowerCase() : "fit"}`,
-        "Multi-thread: loop in the economic buyer with a 1-line exec note",
-        "Run ads to the whole committee for 14 days (air cover)",
-      ],
-    };
+    return { owner: a.owner, play: hot ? "Hot lead: email and call" : "Personal outreach", steps: [`Email ${who} ${when}`, "Loop in the economic buyer", "Run ads to the buying team for 2 weeks"] };
   if (tier === 2)
-    return {
-      owner: "SDR (AE copied)",
-      play: "Signal-based 3-touch sequence",
-      steps: [`Start sequence to ${who} ${slaText(slaHours)}`, "Touch 2: relevant benchmark or case study", "Touch 3: offer the MMM readiness assessment"],
-    };
-  return {
-    owner: "Marketing (no rep time)",
-    play: "Nurture and watch",
-    steps: ["Add committee to ad audiences + newsletter", "Re-score automatically on the next signal"],
-  };
+    return { owner: "SDR team", play: "Email sequence", steps: [`Start a 3-email sequence to ${who} ${when}`, "Email 2: a case study", "Email 3: offer the readiness check"] };
+  return { owner: "Marketing", play: "Nurture", steps: ["Add to ads and the newsletter", "Rescore on the next signal"] };
 }
 
 export const rank = (accounts: Account[]) => accounts.map(scoreAccount).sort((x, y) => y.priority - x.priority || y.fit.score - x.fit.score);
@@ -128,18 +113,18 @@ export type LeadVerdict = { verdict: "route" | "enrich" | "nurture" | "exclude";
 
 export function qualifyLead(email: string, title: string, accounts: Account[]): LeadVerdict {
   const m = email.trim().toLowerCase().match(/^[^@\s]+@([a-z0-9.-]+\.[a-z]{2,})$/);
-  if (!m) return { verdict: "exclude", reason: "Invalid email" };
+  if (!m) return { verdict: "exclude", reason: "Not a valid email" };
   const domain = m[1];
   const t = title.toLowerCase();
-  if (COMPETITOR_DOMAINS.some((d) => domain === d || domain.endsWith("." + d))) return { verdict: "exclude", reason: "Competitor domain: suppress, never route" };
-  if (domain.endsWith(".edu") || /\b(student|intern|phd|professor|researcher)\b/.test(t)) return { verdict: "nurture", reason: "Student / academic: content nurture, no SDR time" };
-  if (FREEMAIL.includes(domain)) return { verdict: "enrich", reason: "Personal email: enrich person to employer before routing" };
+  if (COMPETITOR_DOMAINS.some((d) => domain === d || domain.endsWith("." + d))) return { verdict: "exclude", reason: "Competitor. Blocked." };
+  if (domain.endsWith(".edu") || /\b(student|intern|phd|professor|researcher)\b/.test(t)) return { verdict: "nurture", reason: "Student. Content only." };
+  if (FREEMAIL.includes(domain)) return { verdict: "enrich", reason: "Personal email. Find their company first." };
   const account = accounts.find((a) => domain === a.domain || domain.endsWith("." + a.domain));
   const role = roleOf(title);
-  if (!account) return { verdict: "enrich", reason: "Not in TAM: enrich + fit-score before any routing", role };
+  if (!account) return { verdict: "enrich", reason: "Not a target account. Check fit first.", role };
   const contact = account.contacts.find((c) => c.email.toLowerCase() === email.trim().toLowerCase());
-  if (role === "Other") return { verdict: "nurture", reason: `TAM account (${account.name}) but role not in buying committee`, account, contact, role };
-  return { verdict: "route", reason: `TAM account match: ${account.name} · ${role}`, account, contact, role };
+  if (role === "Other") return { verdict: "nurture", reason: `${account.name}, but not a buyer role`, account, contact, role };
+  return { verdict: "route", reason: `${account.name} · ${role}`, account, contact, role };
 }
 
 // ---------- Hallucination guard for AI drafts ----------
@@ -177,17 +162,17 @@ export const normalizeCitations = (body: string) =>
 // ---------- Inbound conversion: what the visitor sees next (rules pick, Marketing writes the assets) ----------
 export type Asset = { id: string; title: string; kind: "report" | "assessment" | "tool" | "guide" | "comparison" };
 export const ASSETS: Record<string, Asset> = {
-  benchmark: { id: "benchmark", title: "2027 State of Marketing Measurement benchmark", kind: "report" },
-  readiness: { id: "readiness", title: "MMM readiness assessment (5 questions)", kind: "assessment" },
-  geoPlanner: { id: "geoPlanner", title: "Geo-incrementality test planner for CTV and retail media", kind: "tool" },
-  cfoGuide: { id: "cfoGuide", title: "CFO guide: defending the marketing budget with incrementality", kind: "guide" },
-  compare: { id: "compare", title: "How unified measurement compares with single-method tools", kind: "comparison" },
+  benchmark: { id: "benchmark", title: "2027 measurement benchmark report", kind: "report" },
+  readiness: { id: "readiness", title: "MMM readiness check", kind: "assessment" },
+  geoPlanner: { id: "geoPlanner", title: "CTV and retail media test planner", kind: "tool" },
+  cfoGuide: { id: "cfoGuide", title: "CFO guide to proving marketing ROI", kind: "guide" },
+  compare: { id: "compare", title: "Lifesight vs single-method tools", kind: "comparison" },
 };
 
 export function recommendExperience(v: LeadVerdict, type: SignalType, tier?: Tier): { headline: string; assets: Asset[]; cta: string } {
-  if (v.verdict === "exclude") return { headline: "No personalization", assets: [ASSETS.benchmark], cta: "Ungated content only, no form, no follow-up" };
-  if (v.verdict === "enrich") return { headline: "Ask one more question", assets: [ASSETS.benchmark], cta: "Progressive profiling: ask for company name before the next asset" };
-  if (v.verdict === "nurture") return { headline: "Educate, don't sell", assets: [ASSETS.benchmark, ASSETS.compare], cta: "Monthly measurement newsletter" };
+  if (v.verdict === "exclude") return { headline: "Nothing personal", assets: [ASSETS.benchmark], cta: "Public content only, no follow-up" };
+  if (v.verdict === "enrich") return { headline: "Learn more first", assets: [ASSETS.benchmark], cta: "Ask for their company name next" };
+  if (v.verdict === "nurture") return { headline: "Teach, don't sell", assets: [ASSETS.benchmark, ASSETS.compare], cta: "Monthly newsletter" };
   const owner = v.account?.owner ?? "the account team";
   const hot = type === "pricing_visit" || type === "assessment";
   const role = v.role ?? "Other";
@@ -197,7 +182,7 @@ export function recommendExperience(v: LeadVerdict, type: SignalType, tier?: Tie
     : role === "Practitioner" ? [channelHeavy ? ASSETS.geoPlanner : ASSETS.readiness, ASSETS.benchmark]
     : type === "assessment" ? [channelHeavy ? ASSETS.geoPlanner : ASSETS.compare, ASSETS.cfoGuide]
     : [ASSETS.readiness, channelHeavy ? ASSETS.geoPlanner : ASSETS.compare];
-  const cta = tier === 1 && hot ? `Book time with ${owner} (calendar inline, no form)` : tier === 1 ? `Offer a 1:1 measurement review with ${owner}` : "Next asset in the same session, meeting offer after 2 engagements";
+  const cta = tier === 1 && hot ? `Book time with ${owner}` : tier === 1 ? `Offer a call with ${owner}` : "Show the next piece, offer a call later";
   return { headline: `${v.account?.name ?? "TAM account"} · ${role}`, assets, cta };
 }
 

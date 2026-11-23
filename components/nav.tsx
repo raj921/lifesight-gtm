@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/", label: "Desk" },
-  { href: "/architecture", label: "Architecture" },
+  { href: "/architecture", label: "How it works" },
   { href: "/deck", label: "Deck" },
 ];
 
@@ -20,7 +20,7 @@ export function Nav() {
             <circle cx="11" cy="11" r="10" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="1.2" />
           </svg>
           <span className="font-display text-lg leading-none whitespace-nowrap">Signal Desk</span>
-          <span className="hidden sm:inline font-mono text-[11px] text-muted-foreground">for Lifesight · prototype</span>
+          <span className="hidden sm:inline text-xs text-muted-foreground">for Lifesight</span>
         </Link>
         <div className="ml-auto flex gap-0.5 md:gap-1">
           {LINKS.map((l) => (

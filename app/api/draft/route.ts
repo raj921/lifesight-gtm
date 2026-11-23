@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 - Never invent numbers, customers, results, prices or events. Do not use any number that is not in EVIDENCE.
 - Do not say how you know about website visits or downloads; refer to the topic, not the tracking ("teams researching X often...").
 - Open with the reader's situation (the strongest S fact), not with Lifesight. Use at most ONE product fact (P). No feature lists.
-- Under 90 words. Plain, specific, no hype, no "I hope this finds you well". One soft call to action.
+- Under 80 words. Write like a busy person typing a note to a peer: short sentences, plain words. No "I hope this finds you well", "worth a short conversation", "unify", "leverage", "seamless", "unlock". End with one simple question.
 - Angle for this reader: ${ANGLE[role]}.
 Return JSON: {"subject": string (max 8 words), "body": string, "angle": string (one short phrase)}`;
   const user = `RECIPIENT: ${contact.name}, ${contact.title} (${role}) at ${account.name} (${account.industry}).

@@ -3,118 +3,87 @@ import { useEffect, useState } from "react";
 import { ArchitectureDiagram } from "@/components/architecture-diagram";
 
 const Kicker = ({ n, t }: { n: number; t: string }) => (
-  <p className="font-mono text-[11px] uppercase tracking-[.2em] text-muted-foreground">{String(n).padStart(2, "0")} / 05 · {t}</p>
+  <p className="font-mono text-xs uppercase tracking-[.2em] text-muted-foreground">{n} / 5 · {t}</p>
+);
+const Big = ({ children }: { children: React.ReactNode }) => <h2 className="font-display text-4xl md:text-5xl mt-3 leading-[1.05]">{children}</h2>;
+const Card = ({ h, children, tone }: { h: string; children: React.ReactNode; tone?: string }) => (
+  <div className="rounded-lg border bg-card p-4"><p className={`font-display text-xl ${tone ?? ""}`}>{h}</p><div className="mt-1 text-muted-foreground">{children}</div></div>
 );
 
 const SLIDES = [
-  <div key="1" className="grid h-full gap-8 md:grid-cols-[1.1fr_1fr]">
-    <div className="flex flex-col">
+  <div key="1" className="grid h-full content-center gap-10 md:grid-cols-[1.2fr_1fr]">
+    <div>
       <Kicker n={1} t="The problem" />
-      <h2 className="font-display text-4xl md:text-5xl mt-3 leading-[1.05]">Find the few in-market accounts <em className="text-heat">before</em> a competitor does.</h2>
-      <p className="mt-5 text-lg text-muted-foreground">The 95:5 rule from the LinkedIn B2B Institute: about 95% of B2B buyers are not in market at any given moment. Of 10,000 target accounts, maybe a few hundred are in a buying window this quarter.</p>
-      <p className="mt-4 text-lg">The engine&apos;s job is to find those accounts first, reach the right people with proof, and keep everyone else in cheap, automated nurture.</p>
+      <Big>Out of 10,000 accounts, only a few hundred are buying right now.</Big>
+      <p className="mt-5 text-xl text-muted-foreground">Find them first. Reach the right person with a real reason. Leave the rest to cheap nurture.</p>
     </div>
-    <div className="flex flex-col justify-center gap-3">
-      {[
-        ["Fit × timing × proof", "Fit gates everything. Intent decays. Every message cites a stored signal."],
-        ["Rules decide, AI explains", "Scores and routing are versioned code. Models only turn evidence into words."],
-        ["Humans approve", "Every send is approved by a rep until approval and spam rates earn autonomy."],
-        ["One brain for inbound + outbound", "One signal store, one score, one Salesforce record. A report download re-ranks an account in seconds."],
-      ].map(([h, p]) => (
-        <div key={h} className="rounded border bg-card p-4"><p className="font-display text-xl">{h}</p><p className="text-sm text-muted-foreground mt-1">{p}</p></div>
-      ))}
+    <div className="grid content-center gap-3">
+      <Card h="Fit × timing">Good fit gets you on the list. Fresh signals get you a call.</Card>
+      <Card h="Rules decide, AI writes">Scores are code you can read. AI only writes words, and every claim needs a source.</Card>
+      <Card h="People approve">Nothing goes out without a rep saying yes.</Card>
     </div>
   </div>,
 
   <div key="2" className="flex h-full flex-col">
-    <Kicker n={2} t="Signal-led outbound · live demo" />
-    <h2 className="font-display text-4xl mt-3">Five questions, five answers a rep can check.</h2>
-    <div className="mt-5 grid gap-2 text-sm">
-      {[
-        ["Which accounts?", "Fit score 0–100: ad spend, channel mix, analytics team, size. Hot intent at a poor-fit company stays Tier 3."],
-        ["Why now?", "10 signal types across 1P (site, report, webinar, assessment), 2P (partners, review sites) and 3P (MMM hiring, new CMO, new channels, funding), each with a half-life."],
-        ["When?", "SLA comes from the freshest strong signal: pricing visit 4 hours, report 24 hours, hiring 3 days, new exec 7 days."],
-        ["Whom?", "Titles map to roles: economic buyer, champion, practitioner, finance. The engaged person goes first, then multi-thread to the buyer."],
-        ["What to say?", "DeepSeek writes from stored signals plus 3 approved product facts. The guard rejects uncited claims or unsupported numbers, retries once, then falls back to a template."],
-      ].map(([q, a]) => (
-        <div key={q} className="grid grid-cols-[10rem_1fr] gap-4 border-b py-2.5"><b className="font-display text-lg font-normal">{q}</b><span className="text-muted-foreground">{a}</span></div>
-      ))}
+    <Kicker n={2} t="Outbound · demo" />
+    <Big>Five questions, answered for every account.</Big>
+    <div className="mt-6 grid gap-3 md:grid-cols-5">
+      <Card h="Which?">Ad spend, channels, team size</Card>
+      <Card h="Why now?">New CMO, MMM job post, pricing visit, report read</Card>
+      <Card h="When?">Pricing visit: 4 hours. New exec: 7 days.</Card>
+      <Card h="Who?">The person who engaged, then the buyer</Card>
+      <Card h="What to say?">AI email. Every claim points to a signal.</Card>
     </div>
-    <div className="mt-auto rounded border-2 border-heat/70 bg-card p-4 font-mono text-sm">
-      Demo: dormant Halcyon Beauty. Their VP Analytics downloads the benchmark report → rank <b>#16 → #4</b>, <b>Tier 3 → Tier 1</b>, “nurture” → <b>“AE: email within 24 hours”</b>, plus a cited draft to her.
+    <div className="mt-auto rounded-lg border-2 border-heat/70 bg-card p-5 text-lg">
+      <b>Demo:</b> a quiet account reads our report → <b>#16 to #4</b>, Later to <b className="text-heat">Hot</b>, and the rep gets an email draft.
     </div>
   </div>,
 
   <div key="3" className="flex h-full flex-col">
-    <Kicker n={3} t="AI-powered inbound engine" />
-    <h2 className="font-display text-4xl mt-3">Get cited, catch intent, qualify by rules, route in minutes.</h2>
-    <div className="mt-5 grid gap-3 md:grid-cols-5 text-sm">
-      {[
-        ["Discover", "Answer engines + search: an annual benchmark with original data, vs-competitor and “how to measure CTV / retail media” pages with schema. Track monthly citation share in ChatGPT, Perplexity and AI Overviews.", "Content + Marketing"],
-        ["Capture", "Visitor ID, forms, webinars, assessment completions and product sign-ups all land as typed signals in the same store as outbound.", "Automate"],
-        ["Qualify", "Rules first: competitor, student, personal email, not in TAM → enrich. Then fit × intent. Junk never reaches a rep.", "Automate"],
-        ["Convert", "Self-serve MMM readiness assessment (Gartner: 67% of B2B buyers prefer a rep-free experience), industry proof for Tier-1 visitors, meeting booking only for qualified visitors.", "Marketing owns content"],
-        ["Route", "Tier 1 → owning AE in Slack within 5 minutes + Salesforce Task. Tier 2 → SDR. Else nurture. Every route is logged in the CRM.", "RevOps owns rules"],
-      ].map(([h, p, o]) => (
-        <div key={h} className="flex flex-col rounded border bg-card p-4">
-          <p className="font-display text-xl">{h}</p>
-          <p className="mt-2 text-muted-foreground flex-1">{p}</p>
-          <p className={`mt-3 font-mono text-[11px] ${o === "Automate" ? "text-fit" : "text-warm"}`}>{o === "Automate" ? "● automate first" : `○ ${o}`}</p>
-        </div>
-      ))}
+    <Kicker n={3} t="Inbound" />
+    <Big>Get found. Spot the buyer. Route in minutes.</Big>
+    <div className="mt-6 grid gap-3 md:grid-cols-5">
+      <Card h="Found">Original research, comparison pages, answers that ChatGPT and Perplexity quote</Card>
+      <Card h="Spotted">Site visits, forms, webinars, the readiness check</Card>
+      <Card h="Filtered">Competitors, students and Gmail never reach a rep</Card>
+      <Card h="Converted">The right next piece for their role, or a booking link if they&apos;re hot</Card>
+      <Card h="Routed">Hot → the AE in Slack within 5 minutes, logged in Salesforce</Card>
     </div>
-    <p className="mt-auto text-sm text-muted-foreground"><b className="text-foreground">Automate first:</b> capture, matching, qualification, routing, CRM hygiene. <b className="text-foreground">Needs human owners:</b> research content and point of view (Content), AEO and webinars (Marketing), message approval and outcome tags (Sales).</p>
+    <div className="mt-auto grid gap-3 md:grid-cols-2">
+      <Card h="Automate first" tone="text-fit">Capture, matching, filtering, routing, CRM updates</Card>
+      <Card h="Needs an owner" tone="text-warm">Research and content (Content), search and webinars (Marketing), approving emails (Sales)</Card>
+    </div>
   </div>,
 
   <div key="4" className="flex h-full flex-col">
-    <Kicker n={4} t="Architecture · build vs buy · 10k scale" />
-    <div className="mt-2 flex-1"><div className="overflow-x-auto"><div className="min-w-[860px]"><ArchitectureDiagram /></div></div></div>
-    <div className="grid gap-4 md:grid-cols-3 text-sm">
-      <p><b>Buy</b> data: Clay enrichment waterfall, visitor ID, existing review-site intent. <b>Build</b> the opinion: scoring, routing and agents in versioned code. <b>Keep</b> Salesforce as the record.</p>
-      <p><b>Scale:</b> scoring is SQL, so 10k accounts re-score in seconds. LLMs run only on change (~5–15% of accounts a week). Queue with idempotency + replay. Template fallback means no rep ever waits on a model.</p>
-      <p><b>Trust + privacy:</b> cited claims only, suppression lists before drafting, honour Global Privacy Control and opt-outs (CPRA has covered B2B contacts since 2023), company-level visitor ID by default, CAN-SPAM compliant sends, an LLM with no-training terms and US data residency in production, and a 10% holdout to measure the engine&apos;s own lift.</p>
+    <Kicker n={4} t="How it works" />
+    <div className="mt-3 flex-1 overflow-x-auto"><div className="min-w-[860px]"><ArchitectureDiagram /></div></div>
+    <div className="grid gap-3 md:grid-cols-3">
+      <Card h="Build vs buy">Buy the data. Build the scoring and the email writer. Keep Salesforce.</Card>
+      <Card h="10k accounts">Scoring is SQL. AI only runs when something changes. Under $100 a month in AI.</Card>
+      <Card h="Safe">Sources on every claim, opt-outs honoured, a person approves every send.</Card>
     </div>
   </div>,
 
   <div key="5" className="flex h-full flex-col">
-    <Kicker n={5} t="30 / 60 / 90 · cost · KPIs" />
-    <div className="mt-4 grid gap-3 md:grid-cols-3 text-sm">
-      {[
-        ["Days 1–30 · foundation", "Salesforce fields (Fit, Intent, Tier, Why-now, Next action). TAM dedupe + domain matching. 3 signals live: visitor ID, MMM hiring, exec change. Nightly scoring, weekly Tier-1 list, Slack alerts, inbound routing with a 5-minute SLA. Holdout set frozen.", "Needs: SFDC admin, RevOps, vendor contracts"],
-        ["Days 31–60 · AI in the loop", "Research + committee agents. Cited drafts in the sequencer with rep approval. Readiness assessment + benchmark report gate. Reply classification. Rejections tagged by claim id.", "Needs: Content for the report, AE time to review"],
-        ["Days 61–90 · learn + scale", "Refit weights and half-lives on meetings and opportunities. Tier-1 web personalization. AEO tracking. Partner (2P) signals. Cost and quality dashboards. Readout to the CRO.", "Needs: 60 days of outcome data"],
-      ].map(([h, p, d]) => (
-        <div key={h} className="rounded border bg-card p-4"><p className="font-display text-lg">{h}</p><p className="mt-2 text-muted-foreground">{p}</p><p className="mt-2 font-mono text-[11px] text-warm">{d}</p></div>
-      ))}
+    <Kicker n={5} t="First 90 days" />
+    <div className="mt-4 grid gap-3 md:grid-cols-3">
+      <Card h="Days 1–30">Scores in Salesforce. 3 signals live. Hot list to AEs weekly. Inbound routed in 5 min.<p className="mt-2 text-xs text-warm">Needs: Salesforce admin, RevOps</p></Card>
+      <Card h="Days 31–60">AI research and email drafts, approved by reps. Readiness check and benchmark report live.<p className="mt-2 text-xs text-warm">Needs: Content team, AE time</p></Card>
+      <Card h="Days 61–90">Retune scoring on real results. Personalized site for hot accounts. Readout to the CRO.<p className="mt-2 text-xs text-warm">Needs: 60 days of results</p></Card>
     </div>
-    <div className="mt-4 grid gap-4 md:grid-cols-2 text-sm">
-      <div className="rounded border bg-card p-4">
-        <p className="font-display text-lg">Run cost ≈ $1.5–3.5k / month</p>
-        <ul className="mt-2 space-y-1 text-muted-foreground">
-          <li>Clay Growth, $495–1,330 (list price, Nov 2026)</li>
-          <li>Visitor ID tool, ~$500–1,500 (estimate, bake-off first)</li>
-          <li>LLM: under $100 at DeepSeek Flash list prices (~$0.001 per draft)</li>
-          <li>Hosting, database, queue: ~$100–300</li>
-        </ul>
-        <p className="mt-2 font-mono text-[11px]">Well under the loaded cost of one SDR, and it covers all 10k accounts daily.</p>
-      </div>
-      <div className="rounded border bg-card p-4">
-        <p className="font-display text-lg">Day-90 targets, measured against the holdout</p>
-        <table className="mt-2 w-full text-[13px]">
-          <tbody className="divide-y">
-            {[
-              ["Speed-to-lead, Tier-1 inbound", "median under 5 min"],
-              ["Tier-1 accounts worked within SLA", "≥ 80%"],
-              ["Draft approval rate (no edits)", "≥ 70% day 60, ≥ 85% day 90"],
-              ["Qualified meetings, Tier-1 vs holdout", "≥ 1.5× meeting rate"],
-              ["Inbound form → meeting conversion", "+25% vs day-30 baseline"],
-              ["Engine-sourced qualified meetings", "40 by day 90"],
-              ["Pipeline created from those meetings", "~$1M (20 opps × $50k)"],
-              ["Rep research time per account", "~20 min → under 2 min"],
-            ].map(([k, v]) => <tr key={k}><td className="py-1 pr-2 text-muted-foreground">{k}</td><td className="py-1 text-right font-mono text-xs">{v}</td></tr>)}
-          </tbody>
-        </table>
-        <p className="mt-2 font-mono text-[11px]">Assumptions: ~$50k ACV, 50% meeting → opportunity. Swap in Lifesight&apos;s real numbers in week 1; baselines are set in days 1–30.</p>
+    <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1.4fr]">
+      <Card h="Cost: $1.5–3.5k a month">Clay $495–1,330 · site visitor tool ~$500–1,500 · AI under $100 · hosting ~$200</Card>
+      <div className="rounded-lg border bg-card p-4">
+        <p className="font-display text-xl">Day-90 targets</p>
+        <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+          {[
+            ["Hot inbound answered", "< 5 min"], ["Hot accounts worked on time", "80%"],
+            ["Meetings vs holdout", "1.5×"], ["Inbound → meeting", "+25%"],
+            ["Qualified meetings", "40"], ["Pipeline", "~$1M"],
+          ].map(([k, v]) => <p key={k} className="flex justify-between gap-2"><span className="text-muted-foreground">{k}</span><b className="font-mono">{v}</b></p>)}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Assumes $50k deals and half of meetings becoming opportunities.</p>
       </div>
     </div>
   </div>,
@@ -134,17 +103,17 @@ export function Deck() {
   }, []);
   return (
     <div className="space-y-4">
-      <div className="no-print flex items-center gap-3 font-mono text-xs text-muted-foreground">
-        <span>← → to move · 5 slides</span>
+      <div className="no-print flex items-center gap-3 text-xs text-muted-foreground">
         <div className="flex gap-1.5">
           {SLIDES.map((_, j) => (
             <button key={j} onClick={() => setI(j)} aria-label={`Slide ${j + 1}`} aria-current={i === j} className="h-2 w-6 rounded-full bg-secondary aria-[current=true]:bg-heat" />
           ))}
         </div>
+        <span>Use ← →</span>
         <button onClick={() => window.print()} className="ml-auto rounded border px-2 py-1 hover:bg-secondary">Save as PDF</button>
       </div>
       {SLIDES.map((s, j) => (
-        <section key={j} aria-label={`Slide ${j + 1}`} className={`${j === i ? "block" : "hidden"} print:block print:break-after-page min-h-[calc(100vh-9rem)] rounded-md border bg-background p-8 md:p-12 print:border-0`}>
+        <section key={j} aria-label={`Slide ${j + 1}`} className={`${j === i ? "block" : "hidden"} print:block print:break-after-page min-h-[calc(100vh-9rem)] rounded-lg border bg-background p-8 md:p-12 print:border-0`}>
           {s}
         </section>
       ))}

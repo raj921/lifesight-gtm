@@ -128,3 +128,5 @@ body {
 .flash { animation: flash 2.2s ease-out; }
 @media (prefers-reduced-motion: reduce) { .rise, .flash { animation: none; } }
 @media print { nav, .no-print { display: none !important; } body { background: none; } }
+
+:root { color-scheme: light dark; }

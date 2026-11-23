@@ -8,8 +8,8 @@ const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"
 const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
-  title: "Signal Desk · Lifesight GTM engine prototype",
-  description: "Signal-led account prioritization, cited AI outbound and an inbound engine for a 10,000-account TAM.",
+  title: "Signal Desk",
+  description: "Who to call today, why, and what to say. A GTM prototype for Lifesight.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
