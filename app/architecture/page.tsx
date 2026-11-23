@@ -29,10 +29,10 @@ export default function Architecture() {
   return (
     <div className="space-y-8">
       <header className="rise">
-        <h1 className="font-display text-4xl md:text-5xl">Rules decide. AI writes. People approve.</h1>
+        <h1 className="font-serif text-4xl md:text-5xl">Rules decide. AI writes. People approve.</h1>
       </header>
 
-      <section className="rise rounded-lg border bg-card p-4 md:p-6">
+      <section className="rounded-xl border border-line bg-card p-4 md:p-6">
         <div className="overflow-x-auto"><div className="min-w-[860px]"><ArchitectureDiagram /></div></div>
       </section>
 
@@ -43,25 +43,25 @@ export default function Architecture() {
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {NOTES.map(([title, items]) => (
-          <div key={title} className="rounded-lg border bg-card p-5">
-            <h2 className="font-display text-xl">{title}</h2>
-            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">{items.map((x) => <li key={x}>{x}</li>)}</ul>
+          <div key={title} className="rounded-xl border border-line bg-card p-5">
+            <h2 className="font-serif text-xl">{title}</h2>
+            <ul className="mt-3 space-y-2 text-sm text-fg2">{items.map((x) => <li key={x}>{x}</li>)}</ul>
           </div>
         ))}
       </section>
 
-      <p className="text-center text-sm text-muted-foreground">Working in the demo: scoring, routing, email writing and the fact check. Not connected: real data feeds, Salesforce, sending.</p>
+      <p className="text-center text-sm text-fg2">Working in the demo: scoring, routing, email writing and the fact check. Not connected: real data feeds, Salesforce, sending.</p>
     </div>
   );
 }
 
 function Pairs({ title, rows }: { title: string; rows: [string, string][] }) {
   return (
-    <section className="rounded-lg border bg-card p-5">
-      <h2 className="font-display text-xl">{title}</h2>
+    <section className="rounded-xl border border-line bg-card p-5">
+      <h2 className="font-serif text-xl">{title}</h2>
       <ul className="mt-3 divide-y text-sm">
         {rows.map(([a, b]) => (
-          <li key={a} className="flex justify-between gap-4 py-2"><span>{a}</span><span className="font-medium text-heat">{b}</span></li>
+          <li key={a} className="flex justify-between gap-4 py-2"><span>{a}</span><span className="font-medium text-hot-fg">{b}</span></li>
         ))}
       </ul>
     </section>

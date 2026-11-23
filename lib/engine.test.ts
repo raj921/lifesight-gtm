@@ -84,4 +84,10 @@ assert.equal(salesforcePlan(qualifyLead("me@gmail.com", "CMO", ACCOUNTS), "me@gm
 const newPerson = qualifyLead("new.person@halcyon-beauty.example", "Head of Growth", ACCOUNTS);
 assert.equal(salesforcePlan(newPerson, "new.person@halcyon-beauty.example", "webinar", halAfter)[1].object, "Lead (matched to Account)");
 
+// Creepy-tracking guard: drafts must not reveal that we watched them.
+assert.ok(!guardDraft("Saw the report you pulled today [S1].", ev).ok, "'you pulled' leaks tracking");
+assert.ok(!guardDraft("Thanks for your visit to our pricing page [S1].", ev).ok);
+assert.ok(!guardDraft("Noticed you downloaded our guide [S1].", ev).ok);
+assert.ok(guardDraft("Teams hiring for MMM often ask this [S1].", ev).ok, "topic-level phrasing is fine");
+
 console.log("engine checks passed");

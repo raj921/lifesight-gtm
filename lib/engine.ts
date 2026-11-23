@@ -138,6 +138,9 @@ export function guardDraft(body: string, evidence: { id: string; text: string }[
   const corpus = evidence.map((e) => e.text).join(" ");
   const numbers = body.replace(/\[[A-Z]+\d+\]/g, "").match(/\d[\d,.]*%?/g) ?? [];
   for (const n of numbers) if (!corpus.includes(n.replace(/[.,]$/, ""))) errors.push(`Unsupported number "${n}"`);
+  // Never reveal that we watched them: talk about the topic, not their clicks.
+  const creepy = body.match(/\byou(?:'ve| have)? (?:just )?(?:pulled|downloaded|visited|viewed|read|registered|checked out|looked at)\b|\byour (?:recent )?(?:visit|download|registration)\b/i);
+  if (creepy) errors.push(`Reveals tracking: "${creepy[0]}"`);
   const words = body.replace(/\[[A-Z]+\d+\]/g, "").split(/\s+/).filter(Boolean).length;
   if (words > 140) errors.push(`Too long (${words} words)`);
   return { ok: errors.length === 0, errors, cited: [...new Set(cited)] };

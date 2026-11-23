@@ -1,5 +1,9 @@
 "use client";
 import { useMemo, useState } from "react";
+import { motion, MotionConfig } from "motion/react";
+import NumberFlow from "@number-flow/react";
+import { Tooltip } from "@base-ui/react/tooltip";
+import { ArrowCounterClockwise, ArrowRight, Check, Diamond, EnvelopeSimple, Plus, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ACCOUNTS, INBOUND_EVENTS, type InboundType } from "@/lib/data";
 import { addInbound, qualifyLead, rank, recommendExperience, salesforcePlan, SIGNALS, slaText, type LeadVerdict, type Scored, type SfOp, type Tier } from "@/lib/engine";
@@ -9,8 +13,13 @@ type Draft = { source: "deepseek" | "template"; subject: string; body: string; g
 type Snap = { rank: number; tier: Tier };
 type Verdict = LeadVerdict & { change?: { from: Snap; to: Snap }; experience: ReturnType<typeof recommendExperience>; sf: SfOp[] };
 
-const TIER = { 1: { name: "Hot", cls: "bg-heat text-white", ring: "var(--heat)" }, 2: { name: "Warm", cls: "bg-warm text-black", ring: "var(--warm)" }, 3: { name: "Later", cls: "bg-secondary text-muted-foreground", ring: "var(--muted-foreground)" } } as const;
+const TIER = {
+  1: { name: "Hot", gem: "text-hot", ring: "var(--hot)" },
+  2: { name: "Warm", gem: "text-warm", ring: "var(--warm)" },
+  3: { name: "Later", gem: "text-fg3", ring: "var(--fg3)" },
+} as const;
 const PARTY = { "1P": "Our site", "2P": "Partner", "3P": "Public" } as const;
+const spring = { type: "spring", stiffness: 420, damping: 38 } as const;
 
 const PRESETS: { label: string; email: string; title: string; type: InboundType }[] = [
   { label: "Halcyon reads our report", email: "priya.raman@halcyon-beauty.example", title: "VP, Marketing Analytics & Insights", type: "report_download" },
@@ -23,7 +32,7 @@ export function Desk() {
   const [events, setEvents] = useState<Record<string, Ev[]>>({});
   const [selected, setSelected] = useState("brightleaf");
   const [flash, setFlash] = useState<{ id: string; n: number } | null>(null);
-  const [form, setForm] = useState(PRESETS[0]);
+  const [active, setActive] = useState<string | null>(null);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft | "loading" | { error: string }>>({});
   const [decisions, setDecisions] = useState<Record<string, "approved" | "skipped">>({});
@@ -33,7 +42,7 @@ export function Desk() {
   const counts = ([1, 2, 3] as Tier[]).map((t) => ranked.filter((s) => s.tier === t).length);
 
   function run(f: (typeof PRESETS)[number]) {
-    setForm(f);
+    setActive(f.label);
     const v = qualifyLead(f.email, f.title, applyEvents(events));
     if (v.verdict !== "route" || !v.account) return setVerdict({ ...v, experience: recommendExperience(v, f.type), sf: salesforcePlan(v, f.email, f.type) });
     const id = v.account.id;
@@ -76,61 +85,72 @@ export function Desk() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="rise flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-display text-4xl md:text-5xl">Who to call <em className="text-heat">today</em></h1>
-        <div className="flex gap-2">
-          {counts.map((n, i) => (
-            <span key={i} className={`rounded-full px-3 py-1 text-sm ${TIER[(i + 1) as Tier].cls}`}>{n} {TIER[(i + 1) as Tier].name.toLowerCase()}</span>
-          ))}
+    <MotionConfig reducedMotion="user">
+      <Tooltip.Provider delay={150}>
+        <div className="space-y-5">
+          <header className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-sm text-fg3">40 target accounts · ranked live</p>
+              <h1 className="font-serif text-4xl md:text-[44px] leading-tight">Who to call <em>today</em></h1>
+            </div>
+            <div className="flex gap-1.5">
+              {counts.map((n, i) => <TierBadge key={i} tier={(i + 1) as Tier} count={n} />)}
+            </div>
+          </header>
+
+          <section aria-label="Try a website visit" className="rounded-xl border border-line bg-card p-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="px-1.5 text-sm text-fg2">Try a website visit</span>
+              {PRESETS.map((p) => (
+                <Button key={p.label} onClick={() => run(p)} aria-pressed={active === p.label}
+                  className="aria-pressed:bg-hot-subtle aria-pressed:text-hot-fg">{p.label}</Button>
+              ))}
+              <details className="open:basis-full">
+                <summary className="inline-flex h-8 cursor-pointer list-none items-center gap-1 rounded-lg px-3 text-sm text-fg2 hover:bg-component-hover hover:text-fg"><Plus size={14} />Custom</summary>
+                <CustomVisit onRun={run} />
+              </details>
+              {Object.keys(events).length > 0 && (
+                <Button variant="ghost" className="ml-auto" onClick={() => { setEvents({}); setVerdict(null); setDrafts({}); setActive(null); }}>
+                  <ArrowCounterClockwise size={14} />Reset
+                </Button>
+              )}
+            </div>
+            {verdict && <VisitResult key={`${active}|${verdict.reason}|${verdict.change?.to.rank ?? ""}`} v={verdict} />}
+          </section>
+
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.4fr)]">
+            <section aria-label="Accounts" className="overflow-hidden rounded-xl border border-line bg-card lg:sticky lg:top-4 lg:self-start">
+              <ol className="max-h-[calc(100vh-7rem)] overflow-y-auto p-1">
+                {ranked.map((s, i) => (
+                  <motion.li key={s.account.id} layout transition={spring} className="relative">
+                    {flash?.id === s.account.id && (
+                      <motion.span key={flash.n} aria-hidden className="pointer-events-none absolute inset-0 rounded-lg bg-hot-subtle" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 2.4, ease: "easeOut" }} />
+                    )}
+                    <button onClick={() => select(s.account.id)} aria-current={s.account.id === cur.account.id}
+                      className="relative flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left hover:bg-component-hover aria-[current=true]:bg-component">
+                      <NumberFlow value={i + 1} className="w-5 text-right font-mono text-xs text-fg3" />
+                      <Ring value={s.priority} color={TIER[s.tier].ring} size={30} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{s.account.name}</span>
+                        <span className="block truncate text-xs text-fg3">{s.top ? SIGNALS[s.top.type].label : "Quiet"}</span>
+                      </span>
+                      {events[s.account.id] && <span className="size-1.5 rounded-full bg-hot" title="New visit" />}
+                    </button>
+                  </motion.li>
+                ))}
+              </ol>
+            </section>
+
+            <div id="details" className="scroll-mt-4">
+              {/* enter-only animation: content never waits on an exit animation */}
+              <motion.div key={cur.account.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
+                <Account s={cur} drafts={drafts} onDraft={draft} decisions={decisions} decide={(k, v) => setDecisions((x) => ({ ...x, [k]: v }))} />
+              </motion.div>
+            </div>
+          </div>
         </div>
-      </header>
-
-      <section aria-label="Try a website visit" className="rise rounded-lg border bg-card p-4 [animation-delay:60ms]">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-sm font-medium">Try a website visit</span>
-          {PRESETS.map((p) => (
-            <button key={p.label} onClick={() => run(p)} aria-pressed={form.label === p.label && !!verdict}
-              className="rounded-full border px-3 py-1.5 text-sm hover:bg-secondary aria-pressed:border-heat aria-pressed:text-heat">{p.label}</button>
-          ))}
-          <details className="open:basis-full">
-            <summary className="cursor-pointer list-none rounded-full px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">Custom…</summary>
-            <CustomVisit onRun={run} />
-          </details>
-          {Object.keys(events).length > 0 && (
-            <button onClick={() => { setEvents({}); setVerdict(null); setDrafts({}); }} className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:underline">Reset</button>
-          )}
-        </div>
-        {verdict && <VisitResult v={verdict} />}
-      </section>
-
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <section aria-label="Accounts" className="rounded-lg border bg-card lg:sticky lg:top-20 lg:self-start">
-          <ol className="max-h-[calc(100vh-8rem)] overflow-y-auto divide-y">
-            {ranked.map((s, i) => (
-              <li key={flash?.id === s.account.id ? `${s.account.id}-${flash.n}` : s.account.id} className={flash?.id === s.account.id ? "flash" : ""}>
-                <button onClick={() => select(s.account.id)} aria-current={s.account.id === cur.account.id}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-secondary/60 aria-[current=true]:bg-secondary">
-                  <span className="w-5 font-mono text-xs text-muted-foreground">{i + 1}</span>
-                  <Ring value={s.priority} color={TIER[s.tier].ring} size={34} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{s.account.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{s.top ? SIGNALS[s.top.type].label : "Quiet"}</span>
-                  </span>
-                  {events[s.account.id] && <span className="size-2 rounded-full bg-heat" title="New visit" />}
-                </button>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <div id="details" className="scroll-mt-20">
-          <Account key={cur.account.id} s={cur} drafts={drafts} onDraft={draft} decisions={decisions} decide={(k, v) => setDecisions((x) => ({ ...x, [k]: v }))} />
-        </div>
-      </div>
-
-      <p className="text-center text-xs text-muted-foreground">Demo data. Fake companies and people. Nothing is ever sent.</p>
-    </div>
+      </Tooltip.Provider>
+    </MotionConfig>
   );
 }
 
@@ -146,38 +166,62 @@ function revealDetails() {
   if (window.matchMedia("(max-width: 1023px)").matches) setTimeout(() => document.getElementById("details")?.scrollIntoView({ behavior: "smooth" }), 0);
 }
 
-function Ring({ value, color, size = 72, label }: { value: number; color: string; size?: number; label?: string }) {
+function TierBadge({ tier, count }: { tier: Tier; count?: number }) {
+  return (
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-md bg-component px-2 text-sm">
+      <Diamond size={13} weight="fill" className={TIER[tier].gem} />
+      {TIER[tier].name}
+      {count != null && <span className="rounded bg-component px-1.5 font-mono text-xs text-fg2"><NumberFlow value={count} /></span>}
+    </span>
+  );
+}
+
+function Tip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger className="cursor-help">{children}</Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={6}>
+          <Tooltip.Popup className="max-w-xs rounded-lg border border-line bg-modal px-2.5 py-1.5 text-xs text-fg shadow-lg">{label}</Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
+
+function Ring({ value, color, size = 64, label }: { value: number; color: string; size?: number; label?: string }) {
   const r = 15.5, c = 2 * Math.PI * r;
   return (
     <span className="inline-grid shrink-0 justify-items-center gap-1">
       <span className="relative grid place-items-center" style={{ width: size, height: size }}>
         <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90" aria-hidden>
-          <circle cx="18" cy="18" r={r} fill="none" stroke="var(--secondary)" strokeWidth="3" />
-          <circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(value / 100) * c} ${c}`} className="transition-[stroke-dasharray] duration-700" />
+          <circle cx="18" cy="18" r={r} fill="none" stroke="var(--component)" strokeWidth="3" />
+          <motion.circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round"
+            initial={false} animate={{ strokeDasharray: `${(value / 100) * c} ${c}` }} transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }} />
         </svg>
-        <span className={size > 50 ? "font-display text-2xl" : "font-mono text-[11px]"}>{value}</span>
+        <NumberFlow value={value} className={size > 44 ? "font-serif text-2xl" : "font-mono text-[10px] text-fg2"} />
       </span>
-      {label && <span className="text-xs text-muted-foreground">{label}</span>}
+      {label && <span className="text-xs text-fg3">{label}</span>}
     </span>
   );
 }
 
 function CustomVisit({ onRun }: { onRun: (f: (typeof PRESETS)[number]) => void }) {
   const [f, setF] = useState({ label: "Custom", email: "", title: "", type: "report_download" as InboundType });
+  const field = "h-8 rounded-lg border border-line bg-sunken px-2.5 text-sm placeholder:text-fg3";
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onRun(f); }} className="mt-2 grid w-full max-w-md gap-2 rounded-lg border bg-background p-3 sm:grid-cols-2">
-      <input required type="email" placeholder="Work email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} className="h-9 rounded border bg-background px-2 text-sm" aria-label="Work email" />
-      <input placeholder="Job title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className="h-9 rounded border bg-background px-2 text-sm" aria-label="Job title" />
-      <select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as InboundType })} className="h-9 rounded border bg-background px-2 text-sm" aria-label="What they did">
+    <form onSubmit={(e) => { e.preventDefault(); onRun(f); }} className="mt-2 grid w-full max-w-lg gap-2 sm:grid-cols-2">
+      <input required type="email" placeholder="Work email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} className={field} aria-label="Work email" />
+      <input placeholder="Job title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={field} aria-label="Job title" />
+      <select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as InboundType })} className={field} aria-label="What they did">
         {Object.keys(INBOUND_EVENTS).map((k) => <option key={k} value={k}>{SIGNALS[k as InboundType].label}</option>)}
       </select>
-      <Button type="submit" className="bg-heat text-white hover:bg-heat/85">Run</Button>
+      <Button type="submit" variant="default">Run visit<ArrowRight size={14} /></Button>
     </form>
   );
 }
 
-const TONE = { route: "bg-heat text-white", enrich: "bg-warm text-black", nurture: "bg-fit text-white", exclude: "bg-secondary text-muted-foreground" };
-const VERB = { route: "Send to sales", enrich: "Look up first", nurture: "Nurture", exclude: "Ignore" };
+const VERB = { route: ["Send to sales", "bg-hot-subtle text-hot-fg"], enrich: ["Look up first", "bg-warm-subtle text-warm-fg"], nurture: ["Nurture", "bg-brand-subtle text-brand-fg"], exclude: ["Ignore", "bg-component text-fg2"] } as const;
 const tierName = (t: string | number) => String(t).replace(/[123]/g, (d) => TIER[+d as Tier].name);
 
 function sfLine(o: SfOp) {
@@ -190,33 +234,34 @@ function sfLine(o: SfOp) {
 }
 
 function VisitResult({ v }: { v: Verdict }) {
+  const [verb, tone] = VERB[v.verdict];
   return (
-    <div className="rise mt-4 grid gap-3 md:grid-cols-[auto_1fr_1fr]">
-      <div className="flex flex-col justify-center gap-2 md:pr-4">
-        <span className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE[v.verdict]}`}>{VERB[v.verdict]}</span>
-        <p className="font-medium">{v.reason}</p>
-        {v.change && (
-          <p className="flex items-center gap-2 text-sm">
-            <span className="font-mono text-muted-foreground">#{v.change.from.rank}</span>
-            <span className={`rounded px-1.5 text-xs ${TIER[v.change.from.tier].cls}`}>{TIER[v.change.from.tier].name}</span>
-            <span aria-hidden>→</span>
-            <span className="font-mono font-semibold">#{v.change.to.rank}</span>
-            <span className={`rounded px-1.5 text-xs ${TIER[v.change.to.tier].cls}`}>{TIER[v.change.to.tier].name}</span>
-          </p>
-        )}
+    <motion.div data-visit-result initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+      <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,0.9fr)_1fr_1fr]">
+        <div className="flex flex-col justify-center gap-1.5 rounded-lg p-2">
+          <span className={`w-fit rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>{verb}</span>
+          <p className="text-sm font-medium">{v.reason}</p>
+          {v.change && (
+            <p className="flex flex-wrap items-center gap-1.5 text-sm">
+              <span className="font-mono text-fg3">#{v.change.from.rank}</span><TierBadge tier={v.change.from.tier} />
+              <ArrowRight size={14} className="text-fg3" />
+              <span className="font-mono">#{v.change.to.rank}</span><TierBadge tier={v.change.to.tier} />
+            </p>
+          )}
+        </div>
+        <div className="rounded-lg bg-sunken p-3">
+          <p className="text-xs text-fg3">They see next</p>
+          <ul className="mt-1 space-y-0.5 text-sm">{v.experience.assets.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
+          <p className="mt-1 text-sm text-hot-fg">{v.experience.cta}</p>
+        </div>
+        <div className="rounded-lg bg-sunken p-3">
+          <p className="text-xs text-fg3">Salesforce · demo, not written</p>
+          <ul className="mt-1 space-y-0.5 text-sm">
+            {v.sf.length ? v.sf.map((o, i) => <li key={i}>{sfLine(o)}</li>) : <li className="text-fg3">Nothing new to write</li>}
+          </ul>
+        </div>
       </div>
-      <div className="rounded-md bg-background p-3">
-        <p className="text-xs text-muted-foreground">They see next</p>
-        <ul className="mt-1 space-y-0.5 text-sm">{v.experience.assets.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
-        <p className="mt-1 text-sm text-heat">{v.experience.cta}</p>
-      </div>
-      <div className="rounded-md bg-background p-3">
-        <p className="text-xs text-muted-foreground">Salesforce (demo, not written)</p>
-        <ul className="mt-1 space-y-0.5 text-sm">
-          {v.sf.length ? v.sf.map((o, i) => <li key={i} title={Object.entries(o.fields).map(([k, x]) => `${k}: ${x}`).join("\n")}>{sfLine(o)}</li>) : <li className="text-muted-foreground">Nothing new to write</li>}
-        </ul>
-      </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -228,77 +273,83 @@ function Account({ s, drafts, onDraft, decisions, decide }: {
   const live = new Set(s.intent.contributions.map((c) => c.signal.id));
   const older = a.signals.filter((x) => !live.has(x.id)).length;
   return (
-    <section aria-label={`${a.name} details`} className="rise space-y-4">
-      <div className="rounded-lg border bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="font-display text-3xl">{a.name}</h2>
-              <span className={`rounded-full px-2.5 py-0.5 text-xs ${TIER[s.tier].cls}`}>{TIER[s.tier].name}</span>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">{a.industry.split(" · ")[0]} · {a.hq} · ${a.adSpendM}M ad spend · {a.channels.length} channels</p>
+    <section aria-label={`${a.name} details`} className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-card p-5">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="font-serif text-3xl">{a.name}</h2>
+            <TierBadge tier={s.tier} />
           </div>
-          <div className="flex gap-4" title={`Fit: ${s.fit.parts.map(([k, v]) => `${k} ${v}`).join(", ")}`}>
-            <Ring value={s.fit.score} color="var(--fit)" label="Fit" />
-            <Ring value={s.intent.score} color="var(--heat)" label="Timing" />
-            <Ring value={s.priority} color={TIER[s.tier].ring} label="Score" />
-          </div>
+          <p className="mt-1 text-sm text-fg2">{a.industry.split(" · ")[0]} · {a.hq} · ${a.adSpendM}M ad spend · {a.channels.length} channels</p>
+        </div>
+        <div className="flex gap-4">
+          <Ring value={s.fit.score} color="var(--brand)" label="Fit" />
+          <Ring value={s.intent.score} color="var(--warm)" label="Timing" />
+          <Ring value={s.priority} color={TIER[s.tier].ring} label="Score" />
         </div>
       </div>
 
-      <div className="rounded-lg border-2 border-foreground/70 bg-card p-5">
+      <div className="rounded-xl border border-line-strong bg-card p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-display text-2xl">{s.action.play}</h3>
-          <span className="text-sm text-muted-foreground">{s.action.owner}{s.slaHours != null && ` · ${slaText(s.slaHours)}`}</span>
+          <h3 className="font-serif text-2xl">{s.action.play}</h3>
+          <span className="text-sm text-fg2">{s.action.owner}{s.slaHours != null && ` · ${slaText(s.slaHours)}`}</span>
         </div>
-        <ol className="mt-2 space-y-1 text-sm">
-          {s.action.steps.map((x, i) => <li key={x} className="flex gap-2"><span className="font-mono text-muted-foreground">{i + 1}</span>{x}</li>)}
+        <ol className="mt-3 space-y-1.5 text-sm">
+          {s.action.steps.map((x, i) => (
+            <li key={x} className="flex items-center gap-2.5">
+              <span className="grid size-5 place-items-center rounded-md bg-component font-mono text-[11px] text-fg2">{i + 1}</span>{x}
+            </li>
+          ))}
         </ol>
       </div>
 
-      <div className="rounded-lg border bg-card p-5">
-        <h3 className="font-display text-xl">Why now</h3>
+      <div className="rounded-xl border border-line bg-card p-5">
+        <h3 className="text-sm font-medium text-fg2">Why now</h3>
         {s.intent.contributions.length ? (
           <ul className="mt-3 space-y-3">
             {s.intent.contributions.map(({ signal: x, points }) => (
-              <li key={x.id} title={`Source: ${x.source}`}>
+              <li key={x.id}>
                 <div className="flex items-baseline justify-between gap-3 text-sm">
-                  <span>{x.detail}{x.simulated && <span className="ml-2 rounded bg-heat/15 px-1.5 text-xs text-heat">new</span>}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{PARTY[SIGNALS[x.type].party]} · {x.daysAgo === 0 ? "today" : `${x.daysAgo}d ago`}</span>
+                  <span>{x.detail}{x.simulated && <span className="ml-2 rounded-md bg-hot-subtle px-1.5 py-0.5 text-xs text-hot-fg">new</span>}</span>
+                  <Tip label={`Source: ${x.source}`}><span className="shrink-0 text-xs text-fg3">{PARTY[SIGNALS[x.type].party]} · {x.daysAgo === 0 ? "today" : `${x.daysAgo}d ago`}</span></Tip>
                 </div>
-                <div className="mt-1.5 h-1.5 rounded-full bg-secondary"><div className="h-1.5 rounded-full bg-heat transition-[width] duration-700" style={{ width: `${(points / SIGNALS[x.type].weight) * 100}%` }} /></div>
+                <div className="mt-1.5 h-1 rounded-full bg-component">
+                  <motion.div className="h-1 rounded-full bg-warm" initial={{ width: 0 }} animate={{ width: `${(points / SIGNALS[x.type].weight) * 100}%` }} transition={{ duration: 0.6 }} />
+                </div>
               </li>
             ))}
           </ul>
-        ) : <p className="mt-2 text-sm text-muted-foreground">Nothing recent. Good fit alone doesn&apos;t earn a call.</p>}
-        {older > 0 && <p className="mt-3 text-xs text-muted-foreground">{older} older {older === 1 ? "signal" : "signals"} faded out</p>}
+        ) : <p className="mt-2 text-sm text-fg3">Nothing recent. Good fit alone doesn&apos;t earn a call.</p>}
+        {older > 0 && <p className="mt-3 text-xs text-fg3">{older} older {older === 1 ? "signal" : "signals"} faded out</p>}
       </div>
 
-      <div className="rounded-lg border bg-card p-5">
-        <h3 className="font-display text-xl">People</h3>
-        <ul className="mt-2 divide-y">
+      <div className="rounded-xl border border-line bg-card p-2">
+        <h3 className="px-3 pt-3 text-sm font-medium text-fg2">People</h3>
+        <ul className="mt-1">
           {s.committee.map((c) => {
             const key = a.id + c.id;
             const d = drafts[key];
             return (
-              <li key={c.id} className="py-3">
+              <li key={c.id} className="rounded-lg p-3">
                 <div className="flex items-center gap-3">
-                  <span className={`grid size-9 shrink-0 place-items-center rounded-full text-xs font-medium ${c.engaged ? "bg-heat text-white" : "bg-secondary"}`} title={c.engaged ? "Active recently" : undefined}>
+                  <span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-medium ${c.engaged ? "bg-hot text-white" : "bg-component text-fg2"}`}>
                     {c.name.split(" ").map((w) => w[0]).join("")}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="flex flex-wrap items-center gap-2">
+                    <p className="flex flex-wrap items-center gap-1.5 text-sm">
                       <span className="font-medium">{c.name}</span>
-                      <span className="rounded-full bg-secondary px-2 text-xs">{c.role}</span>
-                      {s.target?.id === c.id && <span className="text-xs text-heat">Start here</span>}
+                      <span className="rounded-md bg-component px-1.5 py-0.5 text-xs text-fg2">{c.role}</span>
+                      {s.target?.id === c.id && <span className="text-xs text-hot-fg">Start here</span>}
                     </p>
-                    <p className="truncate text-sm text-muted-foreground">{c.title}</p>
+                    <p className="truncate text-xs text-fg3">{c.title}</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => onDraft(c.id)} disabled={d === "loading"}>
-                    {d === "loading" ? "Writing…" : d ? "Rewrite" : "Write email"}
+                  <Button onClick={() => onDraft(c.id)} disabled={d === "loading"}>
+                    <EnvelopeSimple size={14} />{d === "loading" ? "Writing…" : d ? "Rewrite" : "Write email"}
                   </Button>
                 </div>
-                {d && d !== "loading" && ("error" in d ? <p className="mt-2 text-sm text-destructive">{d.error}</p> : <DraftView d={d} decision={decisions[key]} decide={(v) => decide(key, v)} />)}
+                {d && d !== "loading" && ("error" in d
+                  ? <p className="mt-2 text-sm text-hot-fg">{d.error}</p>
+                  : <DraftView d={d} decision={decisions[key]} decide={(v) => decide(key, v)} />)}
               </li>
             );
           })}
@@ -311,28 +362,29 @@ function Account({ s, drafts, onDraft, decisions, decide }: {
 function DraftView({ d, decision, decide }: { d: Draft; decision?: "approved" | "skipped"; decide: (v: "approved" | "skipped") => void }) {
   const ev = Object.fromEntries(d.evidence.map((e) => [e.id, e.text]));
   return (
-    <div className="rise mt-3 rounded-md border bg-background p-4">
-      <p className="font-medium">{d.subject}</p>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="mt-3 rounded-lg border border-line bg-sunken p-4">
+      <p className="text-sm font-medium">{d.subject}</p>
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-fg2">
         {d.body.split(/(\[[A-Z]+\d+\])/).map((part, i) => {
           const id = part.match(/^\[([A-Z]+\d+)\]$/)?.[1];
-          return id ? <sup key={i} tabIndex={0} title={ev[id]} className="mx-0.5 cursor-help rounded bg-secondary px-1 font-mono text-[10px] text-heat">{id}</sup> : part;
+          return id ? <Tip key={i} label={ev[id] ?? "Unknown source"}><sup className="mx-0.5 rounded bg-brand-subtle px-1 font-mono text-[10px] text-brand-fg">{id}</sup></Tip> : part;
         })}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className={`mr-auto text-xs ${d.guard.ok ? "text-fit" : "text-destructive"}`}>
-          {d.guard.ok ? `✓ Every claim has a source (${d.guard.cited.length})` : "✗ Has a claim without a source"}
+        <span className={`mr-auto inline-flex items-center gap-1 text-xs ${d.guard.ok ? "text-good-fg" : "text-hot-fg"}`}>
+          {d.guard.ok ? <Check size={13} weight="bold" /> : <X size={13} weight="bold" />}
+          {d.guard.ok ? `Every claim has a source (${d.guard.cited.length})` : "Has a claim without a source"}
           {d.source === "template" && " · template"}
         </span>
         {decision ? (
-          <span className="text-sm">{decision === "approved" ? "Approved. Not sent (demo)." : "Skipped."}</span>
+          <span className="text-sm text-fg2">{decision === "approved" ? "Approved. Not sent (demo)." : "Skipped."}</span>
         ) : (
           <>
-            <Button size="sm" variant="ghost" onClick={() => decide("skipped")}>Skip</Button>
-            <Button size="sm" onClick={() => decide("approved")} disabled={!d.guard.ok}>Approve</Button>
+            <Button variant="ghost" onClick={() => decide("skipped")}>Skip</Button>
+            <Button variant="default" onClick={() => decide("approved")} disabled={!d.guard.ok}><Check size={14} />Approve</Button>
           </>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

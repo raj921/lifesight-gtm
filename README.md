@@ -56,6 +56,15 @@ node scripts/check-api.mjs     # live DeepSeek draft passes the citation guard (
   - Signal feeds, Salesforce writes, the sequencer, Slack, ad audiences and the monthly weight refit are designed but not connected.
   - Nothing is ever sent.
 
+## UI stack
+
+The design follows the Interfere design system (design.interfere.com): its colour tokens for light and dark, Inter for UI text, a serif for headings, and gem-style tier badges.
+
+- [Motion](https://motion.dev): accounts slide to their new rank when a visit re-scores them
+- [NumberFlow](https://number-flow.barvian.me): ranks and scores roll to new values
+- [Base UI](https://base-ui.com): accessible tooltips and buttons
+- [Phosphor](https://phosphoricons.com): icons
+
 ## Key engineering decisions
 
 - **Rules decide, AI explains, humans approve.** Score, tier, SLA and routing are deterministic code (`lib/engine.ts`) so a rep or RevOps can audit them. The LLM only turns evidence into words.

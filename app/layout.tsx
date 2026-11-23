@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
-import { Nav } from "@/components/nav";
+import { Geist_Mono, Inter, Newsreader } from "next/font/google";
+import { Sidebar, TopBar } from "@/components/nav";
 import "./globals.css";
 
-const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], axes: ["SOFT", "WONK", "opsz"] });
-const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"], weight: ["400", "500", "600"] });
-const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const newsreader = Newsreader({ variable: "--font-newsreader", subsets: ["latin"], style: ["normal", "italic"] });
+const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Signal Desk",
@@ -14,10 +14,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
-        <Nav />
-        <main className="flex-1 mx-auto w-full max-w-[1400px] px-5 md:px-8 py-6">{children}</main>
+    <html lang="en" className={`${inter.variable} ${newsreader.variable} ${mono.variable} antialiased`}>
+      <body className="min-h-screen">
+        <div className="mx-auto flex min-h-screen max-w-[1600px] gap-2 p-2">
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col pt-1 lg:pt-0">
+            <TopBar />
+            <main className="flex-1 rounded-2xl border border-line bg-container p-4 md:p-7">{children}</main>
+          </div>
+        </div>
       </body>
     </html>
   );
