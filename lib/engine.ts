@@ -87,7 +87,7 @@ export function scoreAccount(a: Account) {
   const top = intent.contributions[0]?.signal;
   // When? The fastest SLA among signals still carrying >= 40% of their weight.
   const live = intent.contributions.filter((c) => c.points >= 0.4 * SIGNALS[c.signal.type].weight);
-  const slaHours = live.length ? Math.min(...live.map((c) => SIGNALS[c.signal.type].slaHours)) : null;
+  const slaHours = live.length ? Math.min(...live.map((c) => SIGNALS[c.signal.type].slaHours)) : top ? 168 : null;
   return { account: a, fit, intent, priority, tier, committee, target, top, slaHours, action: nextAction(tier, top, slaHours, target, a) };
 }
 
@@ -127,19 +127,26 @@ export function qualifyLead(email: string, title: string, accounts: Account[]): 
   return { verdict: "route", reason: `${account.name} · ${role}`, account, contact, role };
 }
 
+// Only public (3P) signals may be quoted to a prospect. Site activity and partner tips stay internal.
+export const isQuotable = (s: Signal) => SIGNALS[s.type].party === "3P";
+
 // ---------- Hallucination guard for AI drafts ----------
-// Every factual sentence must cite [S#]/[P#] that exists; every number must appear in the evidence.
-export function guardDraft(body: string, evidence: { id: string; text: string }[]) {
+// Checks form, not meaning: each statement cites an id that exists, and digits appear in the evidence. A person checks the meaning.
+// shortcut: no entailment check and questions are exempt, add a claim-vs-source judge before any automatic sending.
+export function guardDraft(body: string, evidence: { id: string; text: string }[], subject = "") {
   const errors: string[] = [];
   const ids = new Set(evidence.map((e) => e.id));
   const cited = [...body.matchAll(/\[([A-Z]+\d+)\]/g)].map((m) => m[1]);
   if (!cited.length) errors.push("No citations");
   for (const c of cited) if (!ids.has(c)) errors.push(`Unknown citation [${c}]`);
+  const sentences = body.replace(/([.!?])((?:\s*\[[A-Z]+\d+\])+)/g, "$2$1").split(/\n+|(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+  for (const x of sentences)
+    if (!/\[[A-Z]+\d+\]/.test(x) && !x.endsWith("?") && !/^(hi|hello|hey|dear)\b[^.!]{0,40}[,!]?$/i.test(x) && x.split(/\s+/).length > 3) errors.push(`No source for: "${x}"`);
   const corpus = evidence.map((e) => e.text).join(" ");
-  const numbers = body.replace(/\[[A-Z]+\d+\]/g, "").match(/\d[\d,.]*%?/g) ?? [];
+  const numbers = `${subject} ${body}`.replace(/\[[A-Z]+\d+\]/g, "").match(/\d[\d,.]*%?/g) ?? [];
   for (const n of numbers) if (!corpus.includes(n.replace(/[.,]$/, ""))) errors.push(`Unsupported number "${n}"`);
   // Never reveal that we watched them: talk about the topic, not their clicks.
-  const creepy = body.match(/\byou(?:'ve| have)? (?:just )?(?:pulled|downloaded|visited|viewed|read|registered|checked out|looked at)\b|\byour (?:recent )?(?:visit|download|registration)\b/i);
+  const creepy = `${subject} ${body}`.match(/\byou(?:'ve| have)? (?:just )?(?:pulled|downloaded|visited|viewed|read|registered|checked out|looked at)\b|\byour (?:recent )?(?:visit|download|registration)\b/i);
   if (creepy) errors.push(`Reveals tracking: "${creepy[0]}"`);
   const words = body.replace(/\[[A-Z]+\d+\]/g, "").split(/\s+/).filter(Boolean).length;
   if (words > 140) errors.push(`Too long (${words} words)`);

@@ -2,27 +2,31 @@ import { ArchitectureDiagram } from "@/components/architecture-diagram";
 
 export const metadata = { title: "How it works · Signal Desk" };
 
+const WORKS = ["Fit, timing and score", "Hot / Warm / Later, owner and deadline", "Lead filter and account match by email domain", "Roles from job titles", "A visit changes rank and next action", "AI email, source check, retry, template fallback", "Approve or skip"];
+const SIMULATED = ["40 fictional accounts and their people", "All signals and website visits", "Salesforce writes (preview only)", "Visitor content offers (preview only)"];
+const PROPOSED = ["Live data feeds and enrichment", "Salesforce API, Slack and sequencer", "Research and committee agents", "Postgres, queue, cache and logs", "Holdout test and score retuning", "Any real sending"];
+
 const WHO: [string, string][] = [
   ["Score, tier, owner, deadline", "Rules"],
-  ["Block competitors, students, spam", "Rules"],
-  ["Turn news and job posts into facts", "AI"],
+  ["Block competitors and students", "Rules"],
+  ["Read news and job posts", "AI (proposed)"],
   ["Write the email", "AI, checked"],
-  ["Send anything", "A person"],
+  ["Decide to send", "A person"],
 ];
 
 const BUY: [string, string][] = [
-  ["Company and contact data", "Buy (Clay)"],
-  ["Who's on our website", "Buy"],
-  ["Scoring and routing", "Build"],
-  ["Email writer and fact check", "Build"],
+  ["Company and contact data", "Buy: commodity"],
+  ["Website visitor ID", "Buy: test 2 vendors"],
+  ["Scoring and routing", "Build: our GTM logic"],
+  ["Email writer and check", "Build: swap models easily"],
   ["CRM", "Keep Salesforce"],
 ];
 
 const NOTES: [string, string[]][] = [
-  ["10,000 accounts", ["Scoring is plain SQL. All 10k rescore in seconds.", "AI runs only when something changes, about 1 in 10 accounts a week.", "Data lookups are cached, so we never pay twice."]],
-  ["When things break", ["AI down or wrong twice → a safe template.", "Every event has an id, so retries never double-write.", "Failed jobs wait in a queue and can be replayed."]],
-  ["Privacy", ["B2B contacts have CCPA rights. Honour opt-outs and the browser's privacy signal.", "Identify the company by default, not the person.", "Production uses an AI provider with US data storage. DeepSeek stores data in China."]],
-  ["Getting smarter", ["Every agent run is logged: input, output, cost.", "Rejected emails are tagged with the bad fact, so we fix the source.", "10% of hot accounts are held back to prove the system works."]],
+  ["Scale to 10,000", ["Score in Postgres nightly, and on each new event.", "Call AI only for Hot or Warm accounts that changed.", "Load-test before launch. The prototype has 40."]],
+  ["Reliability", ["Queue with retries and a unique ID per event.", "Template when AI fails. This part works today.", "Dead-letter queue and replay for failed jobs."]],
+  ["Security and privacy", ["Company-level visitor ID by default.", "Honour opt-outs. Legal review before launch.", "Choose a model provider with agreed data terms. DeepSeek here sees synthetic data only."]],
+  ["Observe and learn", ["Log input, output, cost and check result per run.", "Tag rejected emails with the bad fact.", "Hold out 10% of Hot accounts, retune monthly on meetings and deals."]],
 ];
 
 export default function Architecture() {
@@ -37,11 +41,18 @@ export default function Architecture() {
         <div className="overflow-x-auto"><div className="min-w-[860px]"><ArchitectureDiagram /></div></div>
       </section>
 
+      <section className="grid gap-6 md:grid-cols-3" aria-label="What works, what is simulated, what is proposed">
+        <List title="Works now" tone="text-good-fg" items={WORKS} />
+        <List title="Simulated" tone="text-warm-fg" items={SIMULATED} />
+        <List title="Proposed, not built" tone="text-fg2" items={PROPOSED} />
+      </section>
+
       <div className="grid gap-6 md:grid-cols-2">
         <Pairs title="Who decides" rows={WHO} />
         <Pairs title="Build or buy" rows={BUY} />
       </div>
 
+      <p className="label">Production plan (proposed)</p>
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {NOTES.map(([title, items]) => (
           <div key={title} className="rounded-xl border border-line bg-card p-5">
@@ -51,7 +62,15 @@ export default function Architecture() {
         ))}
       </section>
 
-      <p className="text-center text-sm text-fg2">Working in the demo: scoring, routing, email writing and the fact check. Not connected: real data feeds, Salesforce, sending.</p>
+    </div>
+  );
+}
+
+function List({ title, tone, items }: { title: string; tone: string; items: string[] }) {
+  return (
+    <div className="rounded-xl border border-line bg-card p-5">
+      <h2 className={`font-serif text-xl ${tone}`}>{title}</h2>
+      <ul className="mt-3 space-y-1.5 text-sm text-fg2">{items.map((x) => <li key={x}>{x}</li>)}</ul>
     </div>
   );
 }

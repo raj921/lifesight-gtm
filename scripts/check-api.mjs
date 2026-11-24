@@ -20,4 +20,7 @@ if (proto.status !== 400) throw new Error(`event type "toString" should 400, got
 const junk = await fetch("http://localhost:3000/api/draft", { method: "POST", body: "not json" });
 const junkBody = await junk.json();
 if (junk.status !== 400 || !/json/i.test(junkBody.error)) throw new Error(`bad JSON should say so, got ${junk.status} ${junkBody.error}`);
+// Private activity must never reach an email: Brightleaf has only first- and second-party signals.
+const b = await (await fetch("http://localhost:3000/api/draft", { method: "POST", body: JSON.stringify({ accountId: "brightleaf", contactId: "bl1" }) })).json();
+if (b.evidence.some((e) => e.id.startsWith("S")) || /pricing|visit|webinar/i.test(b.body)) throw new Error("private signal leaked: " + b.body);
 console.log("api check passed");

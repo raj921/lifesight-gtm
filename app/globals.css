@@ -32,7 +32,7 @@
   --good-fg: color(display-p3 .12 .5 .32);
 }
 
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   :root {
     --shell: #000;
     --container: color(display-p3 .067 .067 .067);
@@ -95,7 +95,6 @@ body { background: var(--shell); color: var(--fg); font-family: var(--font-inter
 .font-serif { font-family: var(--font-newsreader); letter-spacing: -0.01em; }
 ::selection { background: var(--brand-subtle); }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-@media print { aside, nav, .no-print { display: none !important; } body { background: #fff; } }
 
 /* Patterns from the design bookmarks (see DESIGN.md) */
 .label { font-family: var(--font-geist-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg3); }
@@ -106,7 +105,15 @@ body { background: var(--shell); color: var(--fg); font-family: var(--font-inter
   filter: blur(30px); opacity: .7; }
 .gridlines { background-image: linear-gradient(var(--line-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--line-subtle) 1px, transparent 1px); background-size: 48px 48px; }
 .glass { background: color-mix(in oklab, var(--container) 70%, transparent); backdrop-filter: blur(14px) saturate(1.4); }
-@keyframes ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
-.live-dot { position: relative; width: 6px; height: 6px; border-radius: 9999px; background: var(--good); }
-.live-dot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--good); animation: ping 1.6s cubic-bezier(0,0,.2,1) infinite; }
-@media (prefers-reduced-motion: reduce) { .live-dot::after { animation: none; } }
+
+/* Slides print as five 16:9 pages, always in light colours. */
+@page { size: 13.333in 7.5in; margin: 0; }
+@media print {
+  aside, nav, .no-print, [role="status"], nextjs-portal { display: none !important; }
+  html, body { background: #fff; color-scheme: light; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  body *:has(> main), body *:has(main) { display: block !important; max-width: none !important; min-height: 0 !important; padding: 0 !important; }
+  main { padding: 0 !important; border: 0 !important; overflow: visible !important; }
+  .deck-slide { display: flex !important; width: 13.333in; height: 7.5in; min-height: 0 !important; margin: 0 !important; padding: .55in !important; border: 0 !important; overflow: hidden; break-after: page; }
+  .deck-slide:last-child { break-after: auto; }
+  .deck-diagram { width: 940px; margin: 0 auto; }
+}

@@ -1,6 +1,6 @@
 // Run: node lib/engine.test.ts  (Node strips the types)
 import assert from "node:assert/strict";
-import { rank, scoreAccount, qualifyLead, guardDraft, addInbound, roleOf, normalizeCitations, isInboundType, recommendExperience, salesforcePlan, ASSETS } from "./engine.ts";
+import { rank, scoreAccount, qualifyLead, guardDraft, addInbound, roleOf, normalizeCitations, isInboundType, recommendExperience, salesforcePlan, ASSETS, isQuotable } from "./engine.ts";
 import { ACCOUNTS, INBOUND_EVENTS } from "./data.ts";
 
 const byId = (id: string) => ACCOUNTS.find((a) => a.id === id)!;
@@ -89,5 +89,18 @@ assert.ok(!guardDraft("Saw the report you pulled today [S1].", ev).ok, "'you pul
 assert.ok(!guardDraft("Thanks for your visit to our pricing page [S1].", ev).ok);
 assert.ok(!guardDraft("Noticed you downloaded our guide [S1].", ev).ok);
 assert.ok(guardDraft("Teams hiring for MMM often ask this [S1].", ev).ok, "topic-level phrasing is fine");
+
+// Every statement needs its own citation; greetings and questions do not.
+assert.ok(!guardDraft("New SVP [S1]. Your attribution is broken. Your CFO is unhappy.", ev).ok, "uncited sentences must fail");
+assert.ok(guardDraft("Hi Priya,\n\nThe MMM role is open [S1]. Who owns it?", ev).ok);
+assert.ok(guardDraft("The MMM role is open. [S1] We unify it. [P1]", ev).ok, "citation after the full stop belongs to that sentence");
+assert.ok(!guardDraft("The MMM role is open [S1].", ev, "You saved 40%").ok, "the subject is checked too");
+
+// Private first- and second-party signals set the topic but are never quoted to a prospect.
+assert.ok(byId("northwind").signals.every(isQuotable));
+assert.ok(!byId("brightleaf").signals.some(isQuotable));
+
+// A Hot or Warm action never reads "no deadline".
+for (const s of rank(ACCOUNTS)) if (s.tier < 3) assert.ok(s.slaHours != null, `${s.account.name} has no deadline`);
 
 console.log("engine checks passed");

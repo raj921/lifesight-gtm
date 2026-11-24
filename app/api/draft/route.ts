@@ -1,5 +1,5 @@
 import { ACCOUNTS, INBOUND_EVENTS, PRODUCT_FACTS, type InboundType } from "@/lib/data";
-import { addInbound, guardDraft, isInboundType, normalizeCitations, roleOf, scoreAccount, SIGNALS, type Account } from "@/lib/engine";
+import { addInbound, guardDraft, isInboundType, isQuotable, normalizeCitations, roleOf, scoreAccount, SIGNALS, type Account, type SignalType } from "@/lib/engine";
 
 const MODEL = "deepseek-flash";
 const hits = new Map<string, number[]>(); // shortcut: per-instance rate limit, use Upstash/Vercel KV when this is public for real
@@ -11,6 +11,12 @@ const ANGLE: Record<string, string> = {
   "Technical evaluator": "low lift: no cookies or personal data needed",
   "Finance approver": "budget defensibility in front of finance",
   Other: "measuring what marketing really drives",
+};
+
+// Private signals only choose the topic. Their details never reach the model or the template.
+const TOPIC: Partial<Record<SignalType, string>> = {
+  pricing_visit: "choosing a measurement approach", report_download: "measurement benchmarks", assessment: "readiness for MMM",
+  webinar: "incrementality testing", partner_referral: "budget planning", competitor_eval: "choosing a measurement approach",
 };
 
 export async function POST(req: Request) {
@@ -41,19 +47,22 @@ export async function POST(req: Request) {
   // Only signals that still carry weight are evidence. Old signals are not "why now".
   const live = new Set(scored.intent.contributions.map((c) => c.signal.id));
   const evidence = [
-    ...account.signals.filter((s) => live.has(s.id)).map((s) => ({ id: s.id, text: `${s.detail} (${SIGNALS[s.type].label}, ${s.daysAgo === 0 ? "today" : s.daysAgo + " days ago"}${s.contactId === contact.id ? ", by this recipient" : ""})` })),
+    ...account.signals.filter((s) => live.has(s.id) && isQuotable(s)).map((s) => ({ id: s.id, text: `${s.detail} (${SIGNALS[s.type].label}, ${s.daysAgo === 0 ? "today" : s.daysAgo + " days ago"}${s.contactId === contact.id ? ", by this recipient" : ""})` })),
     ...PRODUCT_FACTS,
   ];
 
   const system = `You write first-touch B2B emails for Lifesight, a marketing measurement platform. Rules:
-- Use ONLY facts in EVIDENCE. Put the evidence id in brackets right after each factual claim, like [S1] or [P2].
+- Use ONLY facts in EVIDENCE. EVERY sentence that is not a greeting or a question must contain an evidence id in brackets, before the full stop, like [S1] or [P2]. A sentence you cannot cite must be deleted. The sentence must say only what that evidence says.
 - Never invent numbers, customers, results, prices or events. Do not use any number that is not in EVIDENCE.
-- Do not say how you know about website visits or downloads; refer to the topic, not the tracking ("teams researching X often...").
-- Open with the reader's situation (the strongest S fact), not with Lifesight. Use at most ONE product fact (P). No feature lists.
+- Never mention visits, downloads or anything the reader did on a website.
+- Open with the reader's situation (the strongest S fact) if there is an S fact. Use at most ONE product fact (P). No feature lists.
 - Under 80 words. Write like a busy person typing a note to a peer: short sentences, plain words. No "I hope this finds you well", "worth a short conversation", "unify", "leverage", "seamless", "unlock". End with one simple question.
-- Angle for this reader: ${ANGLE[role]}.
+- Shape: greeting. One or two sentences restating S facts, each with its id. One P sentence with its id. One question. With no S fact: greeting, one P sentence, one question. Nothing else.
+- Example: "Hi Sam,\\n\\nYour team is hiring for MMM [S1]. Each incrementality test recalibrates the MMM [P2]. Who owns that today?"
+- Angle for this reader (use it in the question only): ${ANGLE[role]}.
 Return JSON: {"subject": string (max 8 words), "body": string, "angle": string (one short phrase)}`;
   const user = `RECIPIENT: ${contact.name}, ${contact.title} (${role}) at ${account.name} (${account.industry}).
+TOPIC for the question: ${TOPIC[scored.top?.type ?? "funding"] ?? "marketing measurement"}
 EVIDENCE:
 ${evidence.map((e) => `[${e.id}] ${e.text}`).join("\n")}`;
 
@@ -74,7 +83,8 @@ ${evidence.map((e) => `[${e.id}] ${e.text}`).join("\n")}`;
         const data = await res.json();
         const out = JSON.parse(data.choices[0].message.content);
         out.body = normalizeCitations(String(out.body ?? ""));
-        const guard = guardDraft(out.body, evidence);
+        out.subject = String(out.subject ?? "");
+        const guard = guardDraft(out.body, evidence, out.subject);
         if (guard.ok && out.subject)
           return Response.json({ source: "deepseek", model: MODEL, attempt, latencyMs: Date.now() - started, subject: out.subject, body: out.body, angle: out.angle, guard, evidence, contact: { ...contact, role }, status: "awaiting_human_approval", usage: data.usage });
         lastErrors = guard.errors;
@@ -87,14 +97,14 @@ ${evidence.map((e) => `[${e.id}] ${e.text}`).join("\n")}`;
     }
   }
 
-  // Fallback: deterministic template, still guarded. The demo never shows an unchecked claim.
-  const top = account.signals.find((s) => s.id === scored.top?.id);
+  // Fallback: deterministic template, still guarded. Uses public signals only.
+  const top = scored.intent.contributions.map((c) => c.signal).find(isQuotable);
   const first = contact.name.split(" ")[0];
   const tmpl = top
-    ? `Hi ${first},\n\nNoticed ${account.name}: ${top.detail.charAt(0).toLowerCase() + top.detail.slice(1)} [${top.id}]. That is usually when the question "which spend is actually incremental?" gets louder.\n\nLifesight brings MMM, geo-incrementality tests and attribution into one platform [P1], and every test recalibrates the model [P2].\n\nOpen to comparing notes on how ${account.name} measures this today?`
+    ? `Hi ${first},\n\nNoticed ${account.name}: ${top.detail.charAt(0).toLowerCase() + top.detail.slice(1)} [${top.id}].\n\nLifesight brings MMM, geo-incrementality tests and attribution into one platform [P1], and every test recalibrates the MMM [P2].\n\nOpen to comparing notes on how ${account.name} measures this today?`
     : `Hi ${first},\n\nLifesight brings MMM, geo-incrementality tests and attribution into one platform [P1]. Open to comparing notes on how ${account.name} measures marketing impact today?`;
   return Response.json({
     source: "template", fallbackReason: key ? lastErrors.join("; ") || "LLM failed" : "No DEEPSEEK_API_KEY set",
-    latencyMs: Date.now() - started, subject: `${account.name} + measuring what is incremental`, body: tmpl, angle: ANGLE[role], guard: guardDraft(tmpl, evidence), evidence, contact: { ...contact, role }, status: "awaiting_human_approval",
+    latencyMs: Date.now() - started, subject: `${account.name} + measuring what is incremental`, body: tmpl, angle: ANGLE[role], guard: guardDraft(tmpl, evidence, `${account.name} + measuring what is incremental`), evidence, contact: { ...contact, role }, status: "awaiting_human_approval",
   });
 }

@@ -30,10 +30,10 @@ How Signal Desk looks, so people and coding agents keep it consistent.
 ## Patterns
 
 - One prompt bar for input, with ↳ suggestion chips under it. One click runs a suggestion.
-- A live status pill with a green dot shows the data is current.
+- A status pill says "Demo data". Never label synthetic data as live.
 - A toast at the bottom confirms what changed ("Halcyon Beauty moved #16 → #4"), then leaves on its own.
 - Copy is short and plain. No "leverage", "seamless", "unlock". A label is 1–3 words.
 
 ## Sources
 
-The patterns above came from the design bookmarks: Interfere (tokens), Refero (DESIGN.md, ↳ chips), MotionSites and Inspora (atmosphere, two-tone headlines), ThreeUI and landing.love/HAOQI (mono labels, grid lines), CollectUI (live pill, floating dock), Variant (prompt bar, italic muted endings), Transitions.dev (concentric cards, toasts), DesEngs (serif italic emphasis), designengineer.tools (Motion, NumberFlow).
+The patterns above came from the design bookmarks: Interfere (tokens), Refero (DESIGN.md, ↳ chips), MotionSites and Inspora (atmosphere, two-tone headlines), ThreeUI and landing.love/HAOQI (mono labels, grid lines), CollectUI (status pill, floating toast), Variant (prompt bar, italic muted endings), Transitions.dev (concentric cards, toasts), DesEngs (serif italic emphasis), designengineer.tools (Motion, NumberFlow).

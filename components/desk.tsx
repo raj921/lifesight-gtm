@@ -97,7 +97,7 @@ export function Desk() {
         <div className="space-y-5">
           <header className="glow flex flex-wrap items-end justify-between gap-3 pt-1">
             <div>
-              <span className="inline-flex h-6 items-center gap-2 rounded-full bg-component px-2.5 text-xs text-fg2"><span className="live-dot" />Live · 40 accounts</span>
+              <span className="inline-flex h-6 items-center gap-2 rounded-full bg-component px-2.5 text-xs text-fg2">Demo data · 40 fictional accounts</span>
               <h1 className="mt-3 font-serif text-4xl leading-tight md:text-5xl">Who to call <em className="text-fg3">today.</em></h1>
             </div>
             <div className="flex gap-1.5">
@@ -290,7 +290,7 @@ function Account({ s, drafts, onDraft, decisions, decide }: {
             <h2 className="font-serif text-3xl">{a.name}</h2>
             <TierBadge tier={s.tier} />
           </div>
-          <p className="mt-1 text-sm text-fg2">{a.industry.split(" · ")[0]} · {a.hq} · ${a.adSpendM}M ad spend · {a.channels.length} channels</p>
+          <p className="mt-1 text-sm text-fg2">{a.industry.split(" · ")[0]} · {a.hq} · ${a.adSpendM}M ad spend · {a.channels.length} {a.channels.length === 1 ? "channel" : "channels"}</p>
         </div>
         <div className="flex gap-4">
           <Ring value={s.fit.score} color="var(--brand)" label="Fit" />
@@ -302,7 +302,7 @@ function Account({ s, drafts, onDraft, decisions, decide }: {
       <div className="rounded-xl border border-line-strong bg-card p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="font-serif text-2xl">{s.action.play}</h3>
-          <span className="text-sm text-fg2">{s.action.owner}{s.slaHours != null && ` · ${slaText(s.slaHours)}`}</span>
+          <span className="text-sm text-fg2">{s.action.owner}{s.tier < 3 && s.slaHours != null && ` · ${slaText(s.slaHours)}`}</span>
         </div>
         <ol className="mt-3 space-y-1.5 text-sm">
           {s.action.steps.map((x, i) => (
@@ -383,7 +383,7 @@ function DraftView({ d, decision, decide }: { d: Draft; decision?: "approved" | 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className={`mr-auto inline-flex items-center gap-1 text-xs ${d.guard.ok ? "text-good-fg" : "text-hot-fg"}`}>
           {d.guard.ok ? <Check size={13} weight="bold" /> : <X size={13} weight="bold" />}
-          {d.guard.ok ? `Every claim has a source (${d.guard.cited.length})` : "Has a claim without a source"}
+          {d.guard.ok ? `Every statement cites a source. Check the meaning.` : "A statement has no valid source"}
           {d.source === "template" && " · template"}
         </span>
         {decision ? (
