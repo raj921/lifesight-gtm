@@ -103,4 +103,6 @@ assert.ok(!byId("brightleaf").signals.some(isQuotable));
 // A Hot or Warm action never reads "no deadline".
 for (const s of rank(ACCOUNTS)) if (s.tier < 3) assert.ok(s.slaHours != null, `${s.account.name} has no deadline`);
 
+assert.ok(guardDraft("The MMM role is open [S1]. How does Kindred Pet Co. measure this?", ev).ok, "a company suffix does not end a sentence");
+
 console.log("engine checks passed");

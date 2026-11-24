@@ -139,7 +139,7 @@ export function guardDraft(body: string, evidence: { id: string; text: string }[
   const cited = [...body.matchAll(/\[([A-Z]+\d+)\]/g)].map((m) => m[1]);
   if (!cited.length) errors.push("No citations");
   for (const c of cited) if (!ids.has(c)) errors.push(`Unknown citation [${c}]`);
-  const sentences = body.replace(/([.!?])((?:\s*\[[A-Z]+\d+\])+)/g, "$2$1").split(/\n+|(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+  const sentences = body.replace(/([.!?])((?:\s*\[[A-Z]+\d+\])+)/g, "$2$1").split(/\n+|(?<=[.!?])(?<!\b(?:Co|Inc|Corp|Ltd)\.)\s+/).map((x) => x.trim()).filter(Boolean);
   for (const x of sentences)
     if (!/\[[A-Z]+\d+\]/.test(x) && !x.endsWith("?") && !/^(hi|hello|hey|dear)\b[^.!]{0,40}[,!]?$/i.test(x) && x.split(/\s+/).length > 3) errors.push(`No source for: "${x}"`);
   const corpus = evidence.map((e) => e.text).join(" ");
